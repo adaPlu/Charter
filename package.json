@@ -5,13 +5,20 @@
   "description": "Charter: an AI-native language where humans state intent, AI writes formal programs, and deterministic tools verify and run them.",
   "type": "module",
   "packageManager": "pnpm@9.15.4",
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=22.18" },
+  "bin": { "charter": "packages/cli/src/main.ts" },
   "scripts": {
     "check": "node scripts/check-layers.mjs && node scripts/check-grammar.mjs && node scripts/check-conformance.mjs",
-    "test": "node --test \"scripts/*.test.mjs\"",
-    "ci": "npm run check && npm run test",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test --test-force-exit \"scripts/*.test.mjs\" \"packages/*/test/*.test.ts\"",
+    "ci": "npm run check && npm run typecheck && npm run test",
+    "charter": "node packages/cli/src/main.ts",
     "scaffold": "node scripts/scaffold-packages.mjs",
     "grammar:relock": "node scripts/check-grammar.mjs --write-lock",
     "design:build": "node scripts/build-design-doc.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "typescript": "5.8.3"
   }
 }

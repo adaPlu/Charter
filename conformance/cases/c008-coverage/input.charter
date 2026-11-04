@@ -1,0 +1,41 @@
+// Exercises grammar productions and alternatives the worked examples do not use:
+// extern functions, events, raise, rename and drop migrations, Set and Map types, "??", "%",
+// "in", durations, "~" version ranges and old(...).
+module notify@0.1.0
+import mailer@~2.1.0 as mail
+uses Mail.send
+principal Account
+
+requirement R-1 confirmed "Send a reminder when a booking is made."
+requirement R-2 inferred  "Reminders go out 30 minutes before the start."
+
+extern fn formatTime(t: Time): Text
+type Tags = Set<Text>
+type Prefs = Map<Text, Bool>
+entity Account { email: Text, prefs: Prefs, tags: Tags }
+entity Booking { owner: Id<Account>, start: Time, slots: Int where >= 1, note: Text? }
+enum BookingError { Full }
+
+event BookingMade(b: Id<Booking>)
+on BookingMade(b) do SendReminder(b) as system                                   req R-1
+
+rule MakeBooking(start: Time, slots: Int where >= 1, note: Text?): Id<Booking> rejects BookingError req R-1
+  permit anyone
+  guard slots % 2 == 0 or slots in [1, 3, 5] else reject Full
+  create Booking { owner = caller.id, start = start, slots = slots, note = note } as b
+  raise BookingMade(b.id)
+  return b.id
+
+rule SendReminder(b: Booking) req R-1, R-2
+  permit system
+  let lead = 30m
+  emit Mail.send(b.owner, "Starts at " + formatTime(b.start - lead) + ": " + (b.note ?? "no note"))
+
+migration 0.1.0 -> 0.2.0 { rename Booking.note to memo  drop Account.tags }
+
+property "slots never shrink"
+  forall s: Int where >= 1 {
+    given a = create Account { email = "a@x", prefs = [], tags = [] }
+    when MakeBooking(now, s, none) as a expect any
+    then forall x in Booking: x.slots >= old(x.slots ?? 1)
+  }

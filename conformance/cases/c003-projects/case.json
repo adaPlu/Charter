@@ -1,10 +1,19 @@
 {
   "title": "Projects API with roles and read-only collaborators",
   "source": "Design doc, Phase 5, example 3. The property comparing result with ok is split out as n003, because it does not parse yet.",
-  "covers": ["A8", "A9", "A14", "A15", "A17", "A18"],
-  "expect": { "parse": "ok" },
+  "covers": [
+    "A8",
+    "A9",
+    "A14",
+    "A15",
+    "A17",
+    "A18"
+  ],
+  "expect": {
+    "parse": "ok"
+  },
   "later": {
-    "M1": "check reports type errors in the tests: account is Id<idn.Account> but the tests pass Text. Expected, to be fixed when identity test helpers exist.",
+    "M2": "check reports type errors in the tests: account is Id<idn.Account> but the tests pass Text. Expected, to be fixed when identity test helpers exist.",
     "M3": "Both asserts Proven. Referential integrity Proven for DeleteProject via the bulk-delete idiom. CanEdit implies CanView Proven."
   }
 }

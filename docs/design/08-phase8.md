@@ -1,6 +1,6 @@
 # Phase 8: MVP implementation plan
 
-This is a plan. Effort figures are rough estimates for a small team, meant for planning and sequencing, not commitments. Milestone 0 has since been completed; the repository README records what it delivered.
+This is a plan. Effort figures are rough estimates for a small team, meant for planning and sequencing, not commitments. Milestones 0 and 1 have since been completed; the repository README records what they delivered, and the Errata section records what they found.
 
 ## 8.0 Ground rules for the build
 

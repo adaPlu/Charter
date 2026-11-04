@@ -1,5 +1,3 @@
-// @charter/types
-// Type and effect checker, narrowing, refinement obligations.
-// Planned for milestone 1. Empty until then.
-
-export {};
+// @charter/types: the type and effect checker, and the obligations it hands to the verifier.
+export * from "./types.ts";
+export { check, INT_LIMIT, DECIMAL_LIMIT, type CheckResult, type FnSig } from "./checker.ts";

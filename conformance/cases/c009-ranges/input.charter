@@ -1,0 +1,16 @@
+// Range rules for numbers (amendments A4 and A13). Results must stay within the Int range
+// ±(2^53 - 1) and the Decimal range ±10^38. Bounded inputs let the verifier prove that, so the
+// runtime check is dropped. Unbounded inputs keep the runtime check instead of failing.
+module ranges@0.1.0
+
+type Small = Int where it >= 0 and it <= 1000
+type Price = Decimal where it >= 0 and it <= 1000000
+
+fn square(x: Small): Int = x * x
+fn total(a: Price, b: Price): Decimal = a + b
+fn unbounded(x: Int, y: Int): Int = x + y
+fn safeRatio(a: Decimal, b: Decimal): Decimal = if b > 0 and a > 0 and a < b then a / b else 0
+
+query Square(x: Small): Int permit anyone = square(x)
+test "square of 1000" { when Square(1000) expect ok then result == 1000000 }
+test "out of range input is rejected" { when Square(1001) expect reject ValidationError }

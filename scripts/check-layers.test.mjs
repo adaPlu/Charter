@@ -79,6 +79,16 @@ test("evasion attempts are caught", () => {
   assert.deepEqual(rulesIn(fixture({ "verify/src/a.ts": "await import(`@charter/${p}`);" })), ["NON_LITERAL"]);
 });
 
+test("methods named import are not mistaken for dynamic imports", () => {
+  const src = `class P {\n  private import(): Import { return this.import(); }\n  require(x: number) { return x; }\n}\nnew P().require(1);`;
+  assert.deepEqual(rulesIn(fixture({ "syntax/src/parser.ts": src })), []);
+  // A real dynamic import is still seen, even right after a method call.
+  assert.deepEqual(rulesIn(fixture({ "verify/src/a.ts": `x.y(); await import("@charter/llm");` })), ["LLM_BOUNDARY"]);
+  // A computed import inside a ternary looks like "import(...) :" but is still a call.
+  assert.deepEqual(rulesIn(fixture({ "verify/src/a.ts": `const m = c ? await import(name) : null;` })), ["NON_LITERAL"]);
+  assert.deepEqual(rulesIn(fixture({ "verify/src/a.ts": `const m = c ? require(name) : null;` })), ["NON_LITERAL"]);
+});
+
 test("ordinary layering is enforced", () => {
   assert.deepEqual(rulesIn(fixture({ "syntax/src/index.ts": `import { g } from "@charter/graph";` })), ["LAYER"]);
   assert.deepEqual(rulesIn(fixture({ "store/src/index.ts": `import { t } from "@charter/types";` })), ["LAYER"]);

@@ -77,13 +77,35 @@ export function findImports(src) {
   };
   add(new RegExp(`\\b(?:import|export)\\s[^;]*?\\bfrom\\s*${STR}`, "g"), "static");
   add(new RegExp(`\\bimport\\s*${STR}`, "g"), "static");
-  add(new RegExp(`\\bimport\\s*\\(\\s*${STR}\\s*[,)]`, "g"), "dynamic");
-  add(new RegExp(`\\brequire\\s*\\(\\s*${STR}\\s*\\)`, "g"), "require");
+  // "(?<![.\w$])" skips member calls such as this.import(...) and names such as reimport(.
+  add(new RegExp(`(?<![.\\w$])import\\s*\\(\\s*${STR}\\s*[,)]`, "g"), "dynamic");
+  add(new RegExp(`(?<![.\\w$])require\\s*\\(\\s*${STR}\\s*\\)`, "g"), "require");
   // import( or require( whose argument is not a single string literal cannot be checked.
-  for (const m of text.matchAll(new RegExp(`\\b(import|require)\\s*\\(\\s*(?!${STR}\\s*[,)])`, "g"))) {
+  for (const m of text.matchAll(new RegExp(`(?<![.\\w$])(import|require)\\s*\\((?!\\s*${STR}\\s*[,)])`, "g"))) {
+    if (isMethodDefinition(text, m.index + m[0].length - 1)) continue;
     found.push({ spec: null, kind: m[1] === "import" ? "dynamic" : "require", line: lineOf(text, m.index) });
   }
   return found;
+}
+
+/**
+ * True if the "(" at `open` starts a method's parameter list rather than a call: the matching
+ * ")" is followed by "{" or by ":" and a return type. Strings are already masked, so every
+ * parenthesis in `text` is code.
+ */
+function isMethodDefinition(text, open) {
+  // A member can only start after "{", "}", ";" or a modifier. Anything else (for example
+  // "? import(x) :" in a ternary) is an expression, so the parenthesis is a call.
+  const before = text.slice(0, text.lastIndexOf("(", open) + 1).replace(/(import|require)\s*\($/, "").trimEnd();
+  const memberStart = before === "" || /[{};]$/.test(before) ||
+    /\b(private|public|protected|static|async|get|set|override|readonly)$/.test(before);
+  if (!memberStart) return false;
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "(") depth++;
+    else if (text[i] === ")" && --depth === 0) return /^\s*[{:]/.test(text.slice(i + 1, i + 40));
+  }
+  return false;
 }
 
 function listFiles(dir) {

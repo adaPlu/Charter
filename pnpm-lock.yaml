@@ -1,0 +1,391 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      '@types/node':
+        specifier: 22.15.3
+        version: 22.15.3
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+
+  packages/cir:
+    dependencies:
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      '@charter/verify':
+        specifier: workspace:*
+        version: link:../verify
+
+  packages/cli:
+    dependencies:
+      '@charter/cir':
+        specifier: workspace:*
+        version: link:../cir
+      '@charter/codegen-ts':
+        specifier: workspace:*
+        version: link:../codegen-ts
+      '@charter/effects':
+        specifier: workspace:*
+        version: link:../effects
+      '@charter/explain':
+        specifier: workspace:*
+        version: link:../explain
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/impact':
+        specifier: workspace:*
+        version: link:../impact
+      '@charter/intent':
+        specifier: workspace:*
+        version: link:../intent
+      '@charter/interp':
+        specifier: workspace:*
+        version: link:../interp
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/runtime-ts':
+        specifier: workspace:*
+        version: link:../runtime-ts
+      '@charter/store':
+        specifier: workspace:*
+        version: link:../store
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      '@charter/verify':
+        specifier: workspace:*
+        version: link:../verify
+
+  packages/codegen-ts:
+    dependencies:
+      '@charter/cir':
+        specifier: workspace:*
+        version: link:../cir
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/runtime-ts':
+        specifier: workspace:*
+        version: link:../runtime-ts
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      '@charter/verify':
+        specifier: workspace:*
+        version: link:../verify
+
+  packages/effects:
+    dependencies:
+      '@charter/store':
+        specifier: workspace:*
+        version: link:../store
+
+  packages/explain:
+    dependencies:
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      '@charter/verify':
+        specifier: workspace:*
+        version: link:../verify
+
+  packages/graph:
+    dependencies:
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+
+  packages/impact:
+    dependencies:
+      '@charter/cir':
+        specifier: workspace:*
+        version: link:../cir
+      '@charter/codegen-ts':
+        specifier: workspace:*
+        version: link:../codegen-ts
+      '@charter/effects':
+        specifier: workspace:*
+        version: link:../effects
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/interp':
+        specifier: workspace:*
+        version: link:../interp
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/runtime-ts':
+        specifier: workspace:*
+        version: link:../runtime-ts
+      '@charter/store':
+        specifier: workspace:*
+        version: link:../store
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      '@charter/verify':
+        specifier: workspace:*
+        version: link:../verify
+
+  packages/intent:
+    dependencies:
+      '@charter/effects':
+        specifier: workspace:*
+        version: link:../effects
+      '@charter/explain':
+        specifier: workspace:*
+        version: link:../explain
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/impact':
+        specifier: workspace:*
+        version: link:../impact
+      '@charter/interp':
+        specifier: workspace:*
+        version: link:../interp
+      '@charter/llm':
+        specifier: workspace:*
+        version: link:../llm
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/store':
+        specifier: workspace:*
+        version: link:../store
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      '@charter/verify':
+        specifier: workspace:*
+        version: link:../verify
+
+  packages/interp:
+    dependencies:
+      '@charter/effects':
+        specifier: workspace:*
+        version: link:../effects
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/store':
+        specifier: workspace:*
+        version: link:../store
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+
+  packages/llm:
+    dependencies:
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+
+  packages/resolve:
+    dependencies:
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+
+  packages/runtime-ts:
+    dependencies:
+      '@charter/effects':
+        specifier: workspace:*
+        version: link:../effects
+      '@charter/store':
+        specifier: workspace:*
+        version: link:../store
+
+  packages/store: {}
+
+  packages/syntax: {}
+
+  packages/testing:
+    dependencies:
+      '@charter/cir':
+        specifier: workspace:*
+        version: link:../cir
+      '@charter/codegen-ts':
+        specifier: workspace:*
+        version: link:../codegen-ts
+      '@charter/effects':
+        specifier: workspace:*
+        version: link:../effects
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/interp':
+        specifier: workspace:*
+        version: link:../interp
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/runtime-ts':
+        specifier: workspace:*
+        version: link:../runtime-ts
+      '@charter/store':
+        specifier: workspace:*
+        version: link:../store
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      '@charter/verify':
+        specifier: workspace:*
+        version: link:../verify
+      fast-check:
+        specifier: 3.23.2
+        version: 3.23.2
+
+  packages/types:
+    dependencies:
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+
+  packages/verify:
+    dependencies:
+      '@charter/graph':
+        specifier: workspace:*
+        version: link:../graph
+      '@charter/resolve':
+        specifier: workspace:*
+        version: link:../resolve
+      '@charter/syntax':
+        specifier: workspace:*
+        version: link:../syntax
+      '@charter/types':
+        specifier: workspace:*
+        version: link:../types
+      z3-solver:
+        specifier: 4.15.1
+        version: 4.15.1
+
+packages:
+
+  '@types/node@22.15.3':
+    resolution: {integrity: sha512-lX7HFZeHf4QG/J7tBZqrCAXwz9J5RD56Y6MpP0eJkka8p+K0RY/yBTW7CYFJ4VGCclxqOLKmiGP5juQc6MKgcw==}
+
+  async-mutex@0.3.2:
+    resolution: {integrity: sha512-HuTK7E7MT7jZEh1P9GtRW9+aTWiDWWi9InbZ5hjxrnRa39KS4BW04+xLBhYNS2aXhHUIKZSw3gj4Pn1pj+qGAA==}
+
+  fast-check@3.23.2:
+    resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
+    engines: {node: '>=8.0.0'}
+
+  pure-rand@6.1.0:
+    resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
+
+  tslib@2.9.1:
+    resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
+
+  typescript@5.8.3:
+    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
+  z3-solver@4.15.1:
+    resolution: {integrity: sha512-1B7mMjiPHtjua20lKCNJgixvRyrkbCpmxk70B2WfoCVymEh2cBemUseDX5RMHl4KmuXe3g6Di8MtD9xp2IKdFQ==}
+    engines: {node: '>=16'}
+
+snapshots:
+
+  '@types/node@22.15.3':
+    dependencies:
+      undici-types: 6.21.0
+
+  async-mutex@0.3.2:
+    dependencies:
+      tslib: 2.9.1
+
+  fast-check@3.23.2:
+    dependencies:
+      pure-rand: 6.1.0
+
+  pure-rand@6.1.0: {}
+
+  tslib@2.9.1: {}
+
+  typescript@5.8.3: {}
+
+  undici-types@6.21.0: {}
+
+  z3-solver@4.15.1:
+    dependencies:
+      async-mutex: 0.3.2

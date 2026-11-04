@@ -11,11 +11,12 @@ This document collects the nine design phases in one place. It was produced from
 | Item | Status |
 |---|---|
 | Design, Phases 1 to 9 | Complete |
-| Milestone 0: repository, layer rule, frozen grammar | Done. See the repository README. |
-| Compiler, verifier, runtime | Not built yet. Milestone 1 starts here. |
-| Evidence for the hypotheses | None yet. The first comes from the H1 pilot, about four months into the build. |
+| Milestone 0: repository, layer rule, frozen grammar | Done |
+| Milestone 1: calculator end to end | Done. Parser, checker, Z3 proofs, interpreter and tests run for the pure part of the language. |
+| Rules, entities and the store | Not built yet. Milestone 2 is next. |
+| Evidence for the hypotheses | None yet. The first comes from the H1 pilot, after milestone 2. |
 
-**Every program, IR listing, report and verification result in Phases 1 to 9 was written or derived by hand.** Code blocks carry status labels:
+**Every program, IR listing, report and verification result in Phases 1 to 9 was written or derived by hand.** Milestone 1 has since checked some of them with real tools; the Errata section says where they held and where they did not. Code blocks carry status labels:
 
 | Label | Meaning |
 |---|---|
@@ -27,7 +28,7 @@ This document collects the nine design phases in one place. It was produced from
 ## How to read this document
 
 - **The phases are kept as written.** Later phases amend earlier ones, and those amendments are listed rather than silently applied. Phase 2's grammar, for example, appears as it was designed. The normative version is `spec/charter.ebnf` in the repository.
-- **The Errata section** lists what milestone 0 found when the grammar was checked by tools for the first time. That includes seven grammar amendments, A14 to A20, and corrections to cross-references.
+- **The Errata section** lists what implementation found. Milestone 0 added grammar amendments A14 to A20. Milestone 1 added A21 and found one hand-derived proof in Phase 5 that does not hold.
 - **The checkpoints** at the end of each phase record decisions, open questions and risks. Phase 8, section 8.6 assigns every open question to a milestone.
 
 ## Contents
@@ -126,10 +127,9 @@ This document collects the nine design phases in one place. It was produced from
   - [9.5 What is genuinely new, after nine phases](#95-what-is-genuinely-new-after-nine-phases)
   - [9.6 Where the whole design stands](#96-where-the-whole-design-stands)
   - [Final checkpoint](#final-checkpoint)
-- [Errata from milestone 0](#errata-from-milestone-0)
-  - [Grammar amendments A14 to A20](#grammar-amendments-a14-to-a20)
-  - [Other corrections](#other-corrections)
-  - [What milestone 0 did not check](#what-milestone-0-did-not-check)
+- [Errata and implementation findings](#errata-and-implementation-findings)
+  - [Milestone 1: the calculator end to end](#milestone-1-the-calculator-end-to-end)
+  - [Milestone 0: grammar and corpus](#milestone-0-grammar-and-corpus)
 - [Appendix: the master prompt](#appendix-the-master-prompt)
   - [Master Prompt: Design and Prototype an AI-Native Programming Language](#master-prompt-design-and-prototype-an-ai-native-programming-language)
 
@@ -2916,7 +2916,7 @@ The language-only condition is primary. The tooling condition is the more practi
 
 # Phase 8: MVP implementation plan
 
-This is a plan. Effort figures are rough estimates for a small team, meant for planning and sequencing, not commitments. Milestone 0 has since been completed; the repository README records what it delivered.
+This is a plan. Effort figures are rough estimates for a small team, meant for planning and sequencing, not commitments. Milestones 0 and 1 have since been completed; the repository README records what they delivered, and the Errata section records what they found.
 
 ## 8.0 Ground rules for the build
 
@@ -3311,7 +3311,7 @@ Whether these five ideas improve AI software development is exactly what Phase 7
 |---|---|
 | Design across nine phases | Complete |
 | Language amendments | A1 to A13 from the design, plus A14 to A20 from milestone 0. The frozen grammar has 74 syntactic rules (83 productions with lexical rules). |
-| Code | Milestone 0 tooling only. Every program, IR listing, report and verification result in this design was written or derived by hand. |
+| Code | Milestones 0 and 1: the toolchain checks, proves, runs and tests the pure part of Charter. Everything involving rules, entities and the store is still derived by hand. |
 | First real evidence | Milestone 1, when the real solver proves the calculator's division safe |
 | First go/no-go decision | The H1 pilot, about four months into the build |
 | Biggest bets | H1, that models generate Charter more reliably than TypeScript, and H2, that edits stay local at scale |
@@ -3330,11 +3330,31 @@ Whether these five ideas improve AI software development is exactly what Phase 7
 
 ---
 
-# Errata from milestone 0
+# Errata and implementation findings
+
+This section records where building Charter showed the design to be wrong or incomplete. The phases above are kept as written.
+
+## Milestone 1: the calculator end to end
+
+Milestone 1 built the parser, canonical printer, hashes, name resolution, type checker, Z3 bridge, reference interpreter, test runner and the `charter` command. These are its findings, in order of importance.
+
+| Finding | Detail | Resolution |
+|---|---|---|
+| **A hand-derived proof in Phase 5 was wrong** | Phase 5 claimed the calculator's `a + b` and `a - b` are proven to stay in range. The real verifier keeps them as runtime checks. `calculate` takes plain `Decimal` parameters, not the bounded `Input` type, so its inputs have no bounds inside the function. | Recorded in conformance case `c001`. This is the kind of difference the milestone 3 exit criterion anticipated: hand derivations can be wrong. |
+| **Large integer literals** | The calculator's test passes `10000000000000000`, which is above the `Int` range of A4, to a `Decimal` parameter. A literal's type depends on where it is used. | New amendment A21. |
+| **No empty Set or Map literal** | `{}` does not parse, because a record literal needs a field. Nothing else denotes an empty set or map. | An open grammar question for milestone 2, recorded in case `c008`. |
+| **The milestone 0 layer rule had false positives** | It read the parser's method named `import` as a dynamic import. | The rule now skips method definitions and member calls. Tests cover both, plus the ternary case that a naive fix would have let through. |
+| **The Phase 8 demo output was optimistic** | Section 8.4 predicted "2 runtime range checks (Mul, Div)". The real run has 4, for the reason in the first row. | The demo output in the README is the measured one. |
+| **Tooling deviation** | Phase 8 chose Vitest. Milestone 1 uses Node's built-in test runner, because it runs TypeScript directly with no extra dependency. | No effect on the design. |
+| **Coverage criterion narrowed** | Phase 8 asked for every production in a passing and a failing case. Milestone 1 checks that every one of the 74 syntactic productions appears in a passing case. | Failing-case coverage per production is left for milestone 2. |
+
+**What milestone 1 checks fully, and what it defers.** Types, enums, functions, queries, and tests and properties that call queries are fully checked, proven and run. Entities, rules, permissions, invariants, asserts, events, triggers and migrations are parsed and resolved. The checker reports them with an info message (`CH0901`) rather than accepting them silently. They are checked from milestone 2.
+
+## Milestone 0: grammar and corpus
 
 Milestone 0 checked the design with tools for the first time. It merged every grammar amendment into `spec/charter.ebnf`, checked the grammar for well-formedness, and parsed every Charter listing from Phases 2, 5 and 6 against it. This section records what that found. The phases above are kept as written; this list says where they were wrong or incomplete.
 
-## Grammar amendments A14 to A20
+### Grammar amendments A14 to A20
 
 Each one was needed because a listing in the design did not parse under the merged grammar, or parsed ambiguously. The register is `spec/amendments.md`, and each amendment is covered by at least one conformance case.
 
@@ -3350,7 +3370,7 @@ Each one was needed because a listing in the design did not parse under the merg
 
 Two tests in `scripts/grammar.test.mjs` confirm that A18 and A19 are needed: with either one undone, the affected examples stop parsing.
 
-## Other corrections
+### Other corrections
 
 | Where | Correction |
 |---|---|
@@ -3361,9 +3381,9 @@ Two tests in `scripts/grammar.test.mjs` confirm that A18 and A19 are needed: wit
 | Phase 5, example 5 | Besides the five gaps listed there, the module used `idn.Account` without importing `identity`. The conformance case adds the import and a `rejects` declaration. |
 | Phase 2, section 2.10 | Under amendment A17, the example's trailing `req R-1, R-2` links to the `emit` clause, not to the whole rule. The meaning is the same here, but the link sits on a different node. |
 
-## What milestone 0 did not check
+### What milestone 0 did not check
 
-The recognizer in `scripts/grammar.mjs` checks that a program belongs to the grammar. It does not apply the longest-match rule, build a syntax tree, or check types. Every result in Phases 1 to 9 beyond "this parses" is still derived by hand. Type checking, proofs and test runs begin in milestone 1.
+The recognizer in `scripts/grammar.mjs` checks that a program belongs to the grammar. It does not apply the longest-match rule, build a syntax tree, or check types. Milestone 1's real parser now agrees with the recognizer on every corpus case and on about 1,900 fuzzed inputs.
 
 ---
 

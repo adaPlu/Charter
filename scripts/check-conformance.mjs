@@ -10,7 +10,8 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadGrammar, recognize } from "./grammar.mjs";
 
-const CURRENT_MILESTONE = 0;
+// Raised as milestones complete. Amendments due by this milestone must be covered.
+const CURRENT_MILESTONE = 1;
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const casesDir = join(root, "conformance", "cases");
 const verbose = process.argv.includes("--verbose");

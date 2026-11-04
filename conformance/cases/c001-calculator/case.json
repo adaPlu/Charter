@@ -1,9 +1,30 @@
 {
   "title": "Calculator with validation",
   "source": "Design doc, Phase 5, example 1",
-  "covers": ["A16", "A19", "A20"],
-  "expect": { "parse": "ok" },
+  "covers": [
+    "A5",
+    "A13",
+    "A16",
+    "A19",
+    "A20",
+    "A21"
+  ],
+  "expect": {
+    "parse": "ok",
+    "check": {
+      "errors": [],
+      "proven": [
+        "b is not zero"
+      ],
+      "runtime": 4,
+      "tests": {
+        "pass": 4,
+        "fail": 0,
+        "skip": 0
+      }
+    }
+  },
   "later": {
-    "M1": "check: ok. Division by zero Proven by narrowing (A13). Mul and Div range Unproven, kept as runtime checks. Release gate blocked by R-3, R-4, R-5. All 3 tests and the property pass on the interpreter."
+    "M3": "Phase 5 claimed the Add and Sub range checks are Proven. Milestone 1 measured them as runtime checks, because calculate takes plain Decimal parameters, not Input. Either give calculate Input parameters or accept the runtime checks; see the design doc errata."
   }
 }

@@ -1,10 +1,18 @@
 {
   "title": "Task manager with persistence, plus the priority migration",
   "source": "Design doc, Phase 5, example 2. Rule-level links moved after the signature (A17).",
-  "covers": ["A2", "A8", "A12", "A16", "A17"],
-  "expect": { "parse": "ok" },
+  "covers": [
+    "A2",
+    "A8",
+    "A12",
+    "A16",
+    "A17"
+  ],
+  "expect": {
+    "parse": "ok"
+  },
   "later": {
-    "M1": "check: ok. Title refinement Proven for every rule by frame reasoning.",
+    "M2": "check: ok. Title refinement Proven for every rule by frame reasoning.",
     "M3": "Both asserts Proven. Referential integrity of Task.owner Proven."
   }
 }

@@ -1,0 +1,20 @@
+{
+  "title": "Int and Decimal range obligations, proven and kept",
+  "source": "Design doc, amendments A4 and A13; written in milestone 1",
+  "covers": ["A4", "A13"],
+  "expect": {
+    "parse": "ok",
+    "check": {
+      "errors": [],
+      "proven": [
+        "x * x stays within the Int range",
+        "a + b stays within the Decimal range",
+        "b is not zero",
+        "a / b stays within the Decimal range",
+        "argument x of square satisfies \"it >= 0 and it <= 1000\""
+      ],
+      "runtime": 1,
+      "tests": { "pass": 2, "fail": 0, "skip": 0 }
+    }
+  }
+}

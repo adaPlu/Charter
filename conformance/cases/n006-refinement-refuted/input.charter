@@ -1,0 +1,5 @@
+// levelFor from Phase 5, example 5, with its table removed. The declared result type says
+// every level is at least 1, but for xp = 0 this returns 0. The verifier must refute the
+// return refinement (T-Sub) with that counterexample.
+module progression@0.1.0
+fn levelFor(xp: Int where >= 0): Int where >= 1 = xp / 100

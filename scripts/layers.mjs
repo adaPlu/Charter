@@ -2,20 +2,24 @@
 // The scaffold script builds package.json files from this map, and check-layers.mjs
 // enforces it. Change the map here, never in a package.json by hand.
 
-/** @type {Record<string, { deps: string[], milestone: number, desc: string }>} */
+/**
+ * deps: other Charter packages this one may import.
+ * external: third-party packages, pinned exactly (design doc, section 8.1).
+ * @type {Record<string, { deps: string[], external?: Record<string, string>, milestone: number, desc: string }>}
+ */
 export const PACKAGES = {
   syntax:       { milestone: 1, deps: [], desc: "Lexer, parser, canonical printer, diagnostics, source spans." },
   graph:        { milestone: 1, deps: ["syntax"], desc: "Node schema, anchors, canonical CBOR, hashes, JSON form, anchor matching, operation applier." },
   resolve:      { milestone: 1, deps: ["syntax", "graph"], desc: "Name resolution and the behavioral dependency graph (amendment A1)." },
   types:        { milestone: 1, deps: ["syntax", "graph", "resolve"], desc: "Type and effect checker, narrowing, refinement obligations." },
-  verify:       { milestone: 3, deps: ["syntax", "graph", "resolve", "types"], desc: "SMT encoding, Z3 bridge, frame reasoning, loop idioms, proof cache, witnesses. (Refinement obligations start in milestone 1.)" },
+  verify:       { milestone: 3, deps: ["syntax", "graph", "resolve", "types"], external: { "z3-solver": "4.15.1" }, desc: "SMT encoding, Z3 bridge, frame reasoning, loop idioms, proof cache, witnesses. (Refinement obligations start in milestone 1.)" },
   store:        { milestone: 2, deps: [], desc: "SQLite store, single-writer queue, snapshots, migration runner with dry run. Runtime-level: no compiler imports." },
   effects:      { milestone: 4, deps: ["store"], desc: "Capability registry, outbox, dispatcher, confirm and compensate, adapters and their conformance suites." },
   "runtime-ts": { milestone: 5, deps: ["store", "effects"], desc: "Library used by generated apps: transactions, outbox, auth hook, kill switches, spending limits." },
   interp:       { milestone: 1, deps: ["syntax", "graph", "resolve", "types", "store", "effects"], desc: "Reference interpreter of the step semantics, step log, replay." },
   cir:          { milestone: 5, deps: ["syntax", "graph", "resolve", "types", "verify"], desc: "Charter IR, lowering, optimizer passes." },
   "codegen-ts": { milestone: 5, deps: ["syntax", "graph", "resolve", "types", "verify", "cir", "runtime-ts"], desc: "TypeScript, SQL schema, HTTP layer and typed client generation." },
-  testing:      { milestone: 1, deps: ["syntax", "graph", "resolve", "types", "verify", "interp", "store", "effects", "cir", "codegen-ts", "runtime-ts"], desc: "Test and property runner, refinement-driven generators, mutation engine, differential tester." },
+  testing:      { milestone: 1, external: { "fast-check": "3.23.2" }, deps: ["syntax", "graph", "resolve", "types", "verify", "interp", "store", "effects", "cir", "codegen-ts", "runtime-ts"], desc: "Test and property runner, refinement-driven generators, mutation engine, differential tester." },
   impact:       { milestone: 6, deps: ["syntax", "graph", "resolve", "types", "verify", "testing", "interp", "store", "effects", "cir", "codegen-ts", "runtime-ts"], desc: "Transitive hashes, impact reports, permission and guard diffs, equivalence checks." },
   explain:      { milestone: 7, deps: ["syntax", "graph", "resolve", "types", "verify"], desc: "Deterministic gloss templates." },
   llm:          { milestone: 7, deps: ["syntax", "graph"], desc: "Provider-neutral model adapter, grammar export for constrained decoding, context slicer. The only package that may talk to a model." },

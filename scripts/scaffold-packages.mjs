@@ -17,6 +17,7 @@ for (const [name, info] of Object.entries(PACKAGES)) {
   // The cli reaches intent through a dynamic import in one file (see layers.mjs), but the
   // package still has to be installed next to it.
   if (name === INTENT_ENTRY.pkg) deps[SCOPE + "intent"] = "workspace:*";
+  for (const [ext, version] of Object.entries(info.external ?? {})) deps[ext] = version;
 
   const pkg = {
     name: SCOPE + name,

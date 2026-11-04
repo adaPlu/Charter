@@ -239,6 +239,84 @@ export function tokenize(src) {
   return toks;
 }
 
+// ---------------------------------------------------------------- sentence generator
+
+const SAMPLE = {
+  ident: ["a", "b", "x", "Foo", "item_1", "Ünï"],
+  int: ["0", "7", "42"],
+  decimal: ["1.5", "0.25"],
+  string: ['"s"', '"say \\"hi\\""'],
+  duration: ["30s", "5ms"],
+  req_id: ["R-1", "R-12"],
+  version: ["0.1.0", "2.10.3"],
+};
+
+/**
+ * Generates a random sentence of the grammar, as source text. Below `budget` levels of rule
+ * nesting it picks freely; deeper than that it takes the alternative that finishes soonest,
+ * so generation always terminates. `rng` returns numbers in [0, 1).
+ */
+export function generate(g, rng, start = "program", budget = 7) {
+  // Shortest completion depth of every rule, by fixpoint.
+  const INF = 1e9;
+  const depthOf = new Map([...g.rules.keys()].map((r) => [r, TOKEN_CLASSES.includes(r) ? 1 : INF]));
+  const nodeDepth = (n) => {
+    switch (n.k) {
+      case "term": return 0;
+      case "ref": return depthOf.get(n.v);
+      case "opt": case "rep": return 0;
+      case "seq": return Math.max(0, ...n.items.map(nodeDepth));
+      case "alt": return Math.min(...n.items.map(nodeDepth));
+      default: return INF;
+    }
+  };
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [name, body] of g.rules) {
+      if (TOKEN_CLASSES.includes(name)) continue;
+      const d = nodeDepth(body) + 1;
+      if (d < depthOf.get(name)) { depthOf.set(name, d); changed = true; }
+    }
+  }
+
+  const out = [];
+  const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+  const emit = (n, depth) => {
+    const deep = depth >= budget;
+    switch (n.k) {
+      case "term": out.push(n.v); return;
+      case "ref":
+        if (TOKEN_CLASSES.includes(n.v)) { out.push(pick(SAMPLE[n.v])); return; }
+        emit(g.rules.get(n.v), depth + 1); return;
+      case "seq": n.items.forEach((m) => emit(m, depth)); return;
+      case "alt": {
+        if (deep) {
+          const best = Math.min(...n.items.map(nodeDepth));
+          emit(pick(n.items.filter((m) => nodeDepth(m) === best)), depth);
+        } else emit(pick(n.items), depth);
+        return;
+      }
+      case "opt": if (!deep && rng() < 0.5) emit(n.item, depth); return;
+      case "rep": { const k = deep ? 0 : Math.floor(rng() * 3); for (let i = 0; i < k; i++) emit(n.item, depth); return; }
+    }
+  };
+  emit({ k: "ref", v: start }, 0);
+  return out.join(" ");
+}
+
+/** A small deterministic random number generator (mulberry32). */
+export function seededRng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 // ---------------------------------------------------------------- recognizer
 
 /**

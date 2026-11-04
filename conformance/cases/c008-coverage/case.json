@@ -1,0 +1,9 @@
+{
+  "title": "Coverage of productions the worked examples do not use",
+  "source": "Written in milestone 1 so every syntactic production of spec/charter.ebnf is exercised",
+  "covers": ["A9", "A12", "A15", "A20"],
+  "expect": { "parse": "ok" },
+  "later": {
+    "M2": "The grammar has no literal for an empty Set or Map ({} does not parse, because a record literal needs a field). [] is used here as a placeholder, so check will report a type mismatch. Settle with the other M2 grammar questions."
+  }
+}

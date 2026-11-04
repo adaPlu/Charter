@@ -1,0 +1,13 @@
+// The calculator from Phase 5, example 1, with its divide-by-zero check removed.
+// It parses and type-checks, but the verifier cannot prove the divisor is non-zero (T-Div),
+// so it must not compile. The solver's counterexample is b = 0.
+module calc@0.1.0
+enum Op { Add, Sub, Mul, Div }
+enum CalcResult { Value(v: Decimal) }
+fn calculate(a: Decimal, b: Decimal, op: Op): CalcResult =
+  match op {
+    Add => Value(a + b),
+    Sub => Value(a - b),
+    Mul => Value(a * b),
+    Div => Value(a / b)
+  }

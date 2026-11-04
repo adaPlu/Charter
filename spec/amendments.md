@@ -2,7 +2,7 @@
 
 Every change to the language after the Phase 2 specification is listed here and in [amendments.json](amendments.json). Grammar amendments must have at least one conformance case before they land. Other amendments must have one by the milestone shown. `scripts/check-conformance.mjs` enforces both rules.
 
-A1 to A13 came from the design phases. A14 to A20 came from milestone 0, while checking the Phase 5 examples against the merged grammar.
+A1 to A13 came from the design phases. A14 to A20 came from milestone 0, while checking the Phase 5 examples against the merged grammar. A21 came from milestone 1, when the calculator's tests first ran.
 
 | ID | Kind | Due | Amendment |
 |---|---|---|---|
@@ -26,3 +26,4 @@ A1 to A13 came from the design phases. A14 to A20 came from milestone 0, while c
 | A18 | grammar | M0 | `not` may be applied to quantifiers, so `guard not exists …` parses. In Phase 2 it did not, although Phases 3 and 5 used it often. `count`, `sum` and `select` are primaries. Expressions after `where`, `:`, `then`, `else`, `=>`, `implies` and `=` extend as far right as possible. |
 | A19 | grammar | M0 | Pattern binders may be `_`, as in `Error(_)`, which Phase 5, example 1 used. |
 | A20 | grammar | M0 | Lexical rules are written down: identifiers, integers, decimals, strings, durations (`30s`), requirement ids (`R-12`) and versions (`0.1.0`). |
+| A21 | semantics | M1 | An integer literal takes its type from where it is used. Where a `Decimal` or `Money` is expected, any size is allowed. Where an `Int` is expected, it must be within ±(2⁵³ − 1). Found because the calculator's test passes `10000000000000000` to a `Decimal` parameter, and that literal is above the `Int` range from A4. |

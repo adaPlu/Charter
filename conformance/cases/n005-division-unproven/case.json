@@ -1,0 +1,9 @@
+{
+  "title": "Division without a check is rejected by the verifier",
+  "source": "Design doc, Phase 2, T-Div, and Phase 5, example 1",
+  "covers": [],
+  "expect": {
+    "parse": "ok",
+    "check": { "errors": [{ "code": "CH0401", "line": 12, "witness": { "b": "0" } }] }
+  }
+}

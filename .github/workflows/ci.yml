@@ -13,11 +13,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4          # version comes from packageManager in package.json
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22                  # 22.18 or later runs TypeScript without a build step
+          cache: pnpm
 
-      # Milestone 0 has no third-party dependencies, so there is nothing to install yet.
+      - name: Install (pinned versions, lockfile must match)
+        run: pnpm install --frozen-lockfile
 
       - name: Layer rule (no model reachable outside intent and llm)
         run: node scripts/check-layers.mjs
@@ -28,8 +31,17 @@ jobs:
       - name: Conformance corpus parses as expected; amendments are covered
         run: node scripts/check-conformance.mjs
 
-      - name: Tests
-        run: node --test "scripts/*.test.mjs"
+      - name: Type check
+        run: pnpm exec tsc -p tsconfig.json
+
+      - name: Tests (scripts, every package, conformance through the real toolchain)
+        run: node --test --test-force-exit "scripts/*.test.mjs" "packages/*/test/*.test.ts"
+
+      - name: Milestone 1 demo
+        shell: bash
+        run: |
+          node packages/cli/src/main.ts check conformance/cases/c001-calculator/input.charter
+          node packages/cli/src/main.ts test conformance/cases/c001-calculator/input.charter
 
       - name: Package manifests match scripts/layers.mjs
         shell: bash

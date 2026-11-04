@@ -1,0 +1,9 @@
+{
+  "title": "A refined return type that the body breaks is refuted",
+  "source": "Design doc, Phase 2, T-Sub, and Phase 5, example 5",
+  "covers": [],
+  "expect": {
+    "parse": "ok",
+    "check": { "errors": [{ "code": "CH0402", "line": 5 }] }
+  }
+}

@@ -20,6 +20,7 @@
     "@charter/store": "workspace:*",
     "@charter/syntax": "workspace:*",
     "@charter/types": "workspace:*",
-    "@charter/verify": "workspace:*"
+    "@charter/verify": "workspace:*",
+    "fast-check": "3.23.2"
   }
 }
