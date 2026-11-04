@@ -1,0 +1,9 @@
+{
+  "title": "Adding authentication without changing the Task table",
+  "source": "Design doc, Phase 6, section 6.6",
+  "covers": ["A9", "A14", "A15", "A18"],
+  "expect": { "parse": "ok" },
+  "later": {
+    "M6": "Policy freeze: existing-entities passes, because the transitive hash of Task is unchanged."
+  }
+}

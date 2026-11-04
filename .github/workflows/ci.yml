@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    # Two operating systems from the start: Phase 4 requires byte-identical builds across machines.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Milestone 0 has no third-party dependencies, so there is nothing to install yet.
+
+      - name: Layer rule (no model reachable outside intent and llm)
+        run: node scripts/check-layers.mjs
+
+      - name: Grammar is well-formed and still frozen
+        run: node scripts/check-grammar.mjs
+
+      - name: Conformance corpus parses as expected; amendments are covered
+        run: node scripts/check-conformance.mjs
+
+      - name: Tests
+        run: node --test "scripts/*.test.mjs"
+
+      - name: Package manifests match scripts/layers.mjs
+        shell: bash
+        run: |
+          node scripts/scaffold-packages.mjs
+          git diff --exit-code -- packages
+
+      - name: Combined design document matches its parts
+        shell: bash
+        run: |
+          node scripts/build-design-doc.mjs
+          git diff --exit-code -- docs/charter-design.md

@@ -1,0 +1,9 @@
+{
+  "title": "Calculator with validation",
+  "source": "Design doc, Phase 5, example 1",
+  "covers": ["A16", "A19", "A20"],
+  "expect": { "parse": "ok" },
+  "later": {
+    "M1": "check: ok. Division by zero Proven by narrowing (A13). Mul and Div range Unproven, kept as runtime checks. Release gate blocked by R-3, R-4, R-5. All 3 tests and the property pass on the interpreter."
+  }
+}

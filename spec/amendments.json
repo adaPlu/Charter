@@ -1,0 +1,25 @@
+{
+  "comment": "Machine-readable amendment register. spec/amendments.md is the readable version; check-conformance.mjs verifies they list the same ids and that every grammar amendment has a conformance case.",
+  "amendments": [
+    { "id": "A1",  "phase": 3, "kind": "semantics", "dueMilestone": 6, "title": "Transitive hashes cover behavioral dependencies" },
+    { "id": "A2",  "phase": 3, "kind": "grammar",   "dueMilestone": 0, "title": "assert declarations" },
+    { "id": "A3",  "phase": 3, "kind": "semantics", "dueMilestone": 3, "title": "Compensations inherit refinements of captured parameters" },
+    { "id": "A4",  "phase": 4, "kind": "semantics", "dueMilestone": 1, "title": "Int is the safe-integer range in the MVP" },
+    { "id": "A5",  "phase": 4, "kind": "tooling",   "dueMilestone": 1, "title": "Deterministic solver resource limits and a proof cache" },
+    { "id": "A6",  "phase": 4, "kind": "runtime",   "dueMilestone": 4, "title": "Capability delivery semantics and the Unknown result" },
+    { "id": "A7",  "phase": 4, "kind": "runtime",   "dueMilestone": 4, "title": "Disabled outcome and per-rule kill switch" },
+    { "id": "A8",  "phase": 5, "kind": "grammar",   "dueMilestone": 0, "title": "select expressions" },
+    { "id": "A9",  "phase": 5, "kind": "grammar",   "dueMilestone": 0, "title": "permit system, and principal ... by" },
+    { "id": "A10", "phase": 5, "kind": "runtime",   "dueMilestone": 2, "title": "Ids derived from the step seed so they cannot be guessed" },
+    { "id": "A11", "phase": 5, "kind": "grammar",   "dueMilestone": 0, "title": "confirm blocks on emit" },
+    { "id": "A12", "phase": 5, "kind": "grammar",   "dueMilestone": 0, "title": "Tests with several acts, and the effects value" },
+    { "id": "A13", "phase": 5, "kind": "semantics", "dueMilestone": 1, "title": "Decimal range, narrowing in expression if, minimal standard library" },
+    { "id": "A14", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "Qualified names in types and triggers" },
+    { "id": "A15", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "Partial version ranges in imports" },
+    { "id": "A16", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "req links on type and enum declarations" },
+    { "id": "A17", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "Rule-level links follow the signature" },
+    { "id": "A18", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "not applies to quantifiers; aggregates are primaries; longest match" },
+    { "id": "A19", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "Wildcard binders in patterns" },
+    { "id": "A20", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "Lexical rules written down" }
+  ]
+}

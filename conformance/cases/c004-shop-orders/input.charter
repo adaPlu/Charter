@@ -1,0 +1,62 @@
+// Design doc, Phase 5, example 4: inventory and ordering with concurrency protection.
+module shop@0.2.0
+uses Payment.charge                 // adapter signature: charge(c: Id<Customer>, amount: Money where > 0, ref: Id<Order>), idempotent
+principal Customer
+
+requirement R-1 confirmed "Ordering an item reduces inventory by the quantity ordered."
+requirement R-2 confirmed "Inventory never becomes negative."
+requirement R-3 confirmed "If there isn't enough stock, reject the order without charging."
+requirement R-4 confirmed "If payment fails, cancel the order and return the stock."
+requirement R-5 confirmed "An order has 1 to 10 units of one product."
+requirement R-6 confirmed "The charge uses the price at the time of ordering."
+requirement R-7 inferred  "Only active customers can order."
+requirement R-8 inferred  "Free items are marked paid without a charge."
+
+entity Customer { name: Text, active: Bool = true }
+entity Product  { name: Text, price: Money where >= 0, stock: Int where >= 0 }
+enum   OrderStatus { Pending, Paid, Failed }
+type   Qty = Int where it >= 1 and it <= 10                                         req R-5
+entity Order { customer: Id<Customer>, product: Id<Product>, qty: Qty,
+               amount: Money where >= 0, status: OrderStatus = Pending, placed: Time }
+enum   OrderError { OutOfStock }
+
+rule PlaceOrder(p: Product, qty: Qty): Id<Order> rejects OrderError req R-1, R-3
+  permit caller.active                                                             req R-7
+  guard p.stock >= qty else reject OutOfStock                                      req R-3
+  let amount = p.price * qty                                                       req R-6
+  set p.stock = p.stock - qty                                                      req R-1
+  create Order { customer = caller.id, product = p.id, qty = qty,
+                 amount = amount, placed = now } as o
+  if amount > 0 {
+    emit Payment.charge(caller.id, amount, o.id)
+      confirm    { set o.status = Paid }
+      compensate { set o.status = Failed
+                   set p.stock = p.stock + qty }                                   req R-4
+  } else {
+    set o.status = Paid                                                            req R-8
+  }
+  return o.id
+
+rule Restock(p: Product, qty: Int where > 0) permit system  set p.stock = p.stock + qty
+
+invariant StockNonNegative: Product.stock >= 0                                     req R-2
+invariant PaidHasNoFailure: forall o in Order: o.status != Failed or o.amount > 0
+
+test "two orders for the last unit: one wins, one is rejected and not charged" {
+  given a = create Customer { name = "Ana" }
+  given b = create Customer { name = "Ben" }
+  given p = create Product { name = "Lamp", price = 40.00, stock = 1 }
+  when PlaceOrder(p, 1) as a expect ok
+  then len(effects) == 1
+  when PlaceOrder(p, 1) as b expect reject OutOfStock
+  then len(effects) == 0 and p.stock == 0
+}
+property "stock never goes negative across order sequences"
+  forall q1: Qty, q2: Qty, q3: Qty {
+    given c = create Customer { name = "Ana" }
+    given p = create Product { name = "Lamp", price = 40.00, stock = 12 }
+    when PlaceOrder(p, q1) as c expect any
+    when PlaceOrder(p, q2) as c expect any
+    when PlaceOrder(p, q3) as c expect any
+    then p.stock >= 0 and p.stock == 12 - sum o.qty for o in Order where o.product == p.id
+  }

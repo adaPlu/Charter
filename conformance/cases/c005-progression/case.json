@@ -1,0 +1,10 @@
+{
+  "title": "Game progression with idempotent match recording",
+  "source": "Design doc, Phase 5, example 5, with gaps 1 and the missing import fixed.",
+  "covers": ["A9", "A14", "A15", "A18"],
+  "expect": { "parse": "ok" },
+  "later": {
+    "M2": "Decide whether set through the narrowed optional binding pl is allowed (Phase 5, gap 2). Until then, check reports it.",
+    "M3": "LevelMatchesXP and UnlocksEarned Unproven for RecordMatch (nested loops), kept as runtime checks."
+  }
+}

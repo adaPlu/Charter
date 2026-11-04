@@ -1,0 +1,30 @@
+// Design doc, Phase 2, section 2.10: the first conformance example, unchanged.
+// Its trailing "req R-1, R-2" now belongs to the emit clause (A17).
+module shop@0.1.0
+uses Payment.charge
+principal Customer
+
+requirement R-1 confirmed "Never allow inventory to become negative."
+requirement R-2 confirmed "If there isn't enough stock, reject the order without charging the customer."
+requirement R-3 inferred  "Only active customers may place orders."
+
+entity Customer { name: Text, active: Bool = true }
+entity Product  { name: Text, price: Money where >= 0, stock: Int where >= 0 } req R-1
+enum OrderError { OutOfStock }
+
+rule PlaceOrder(p: Product, qty: Int where > 0) rejects OrderError
+  permit caller.active req R-3
+  guard p.stock >= qty else reject OutOfStock req R-2
+  set p.stock = p.stock - qty
+  emit Payment.charge(caller.id, p.price * qty)
+    compensate { set p.stock = p.stock + qty }
+  req R-1, R-2
+
+invariant StockNonNegative: Product.stock >= 0 req R-1
+
+property "stock drops by exactly qty or not at all"
+  forall qty: Int where > 0 {
+    given p = create Product { name = "Mug", price = 5.00, stock = 3 }
+    when PlaceOrder(p, qty) expect any
+    then p.stock == old(p.stock) - qty or p.stock == old(p.stock)
+  }

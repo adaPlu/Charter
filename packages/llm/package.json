@@ -1,0 +1,16 @@
+{
+  "name": "@charter/llm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Provider-neutral model adapter, grammar export for constrained decoding, context slicer. The only package that may talk to a model.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 7
+  },
+  "dependencies": {
+    "@charter/graph": "workspace:*",
+    "@charter/syntax": "workspace:*"
+  }
+}

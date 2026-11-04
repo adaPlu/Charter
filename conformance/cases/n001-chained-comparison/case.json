@@ -1,0 +1,6 @@
+{
+  "title": "Chained comparison is rejected",
+  "source": "spec/charter.ebnf, cmp_expr is non-associative",
+  "covers": ["A18"],
+  "expect": { "parse": { "error": { "line": 4 } } }
+}

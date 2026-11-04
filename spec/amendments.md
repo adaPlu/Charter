@@ -1,0 +1,28 @@
+# Charter amendments
+
+Every change to the language after the Phase 2 specification is listed here and in [amendments.json](amendments.json). Grammar amendments must have at least one conformance case before they land. Other amendments must have one by the milestone shown. `scripts/check-conformance.mjs` enforces both rules.
+
+A1 to A13 came from the design phases. A14 to A20 came from milestone 0, while checking the Phase 5 examples against the merged grammar.
+
+| ID | Kind | Due | Amendment |
+|---|---|---|---|
+| A1 | semantics | M6 | Transitive hashes cover behavioral dependencies. A rule depends on every invariant and assert over entities it writes, on rules its events trigger, and on the capabilities it uses. |
+| A2 | grammar | M0 | `assert Name: Rule permitted implies e` and `… succeeds implies e`. Static only, checked by SMT, never compiled. |
+| A3 | semantics | M3 | A compensation inherits the refinements of the parameters it captures. |
+| A4 | semantics | M1 | In the MVP, `Int` is the range ±(2⁵³ − 1). Leaving it is an overflow fault. |
+| A5 | tooling | M1 | The verifier uses Z3's deterministic resource limit, not a wall-clock timeout. Proof results are cached by obligation hash. |
+| A6 | runtime | M4 | Capabilities declare `idempotent` or `at-most-once` delivery. An ambiguous result is `Unknown` and goes to an operator. |
+| A7 | runtime | M4 | A `Disabled` outcome for rules an operator has switched off. |
+| A8 | grammar | M0 | `select e for x in coll [where c] [order by e, …]` builds a list. `none` sorts last. |
+| A9 | grammar | M0 | `permit system` for internal steps only. `principal User by account` links the caller to an identity account. |
+| A10 | runtime | M2 | New ids derive from the step's random seed as well as the step id, so they replay exactly but cannot be guessed. |
+| A11 | grammar | M0 | `emit … confirm { … }` runs as a system step when the effect succeeds. |
+| A12 | grammar | M0 | Tests and properties may contain several `when … expect` acts. `effects` lists the effects queued by the last act. |
+| A13 | semantics | M1 | `Decimal` magnitudes stay below 10³⁸. Narrowing applies inside expression-level `if`. Standard library: `len`, `trim`, `lower`, `upper`, `contains`, `abs`, `min`, `max`. |
+| A14 | grammar | M0 | Qualified names are allowed in types (`Id<idn.Account>`) and in trigger event names (`on idn.Registered`). Needed by Phase 5, example 3. |
+| A15 | grammar | M0 | Version ranges may be partial: `^1`, `^1.0` or `^1.0.0`. Phase 5's `import identity@^1.0` did not parse before. |
+| A16 | grammar | M0 | `type` and `enum` declarations accept `req` links. Phase 5's `type Input = … req R-5` did not parse before. |
+| A17 | grammar | M0 | Rule-level `req` links come right after the signature, before `permit`. A `req` at the end of a rule belongs to its last clause. The Phase 2 grammar allowed both readings. |
+| A18 | grammar | M0 | `not` may be applied to quantifiers, so `guard not exists …` parses. In Phase 2 it did not, although Phases 3 and 5 used it often. `count`, `sum` and `select` are primaries. Expressions after `where`, `:`, `then`, `else`, `=>`, `implies` and `=` extend as far right as possible. |
+| A19 | grammar | M0 | Pattern binders may be `_`, as in `Error(_)`, which Phase 5, example 1 used. |
+| A20 | grammar | M0 | Lexical rules are written down: identifiers, integers, decimals, strings, durations (`30s`), requirement ids (`R-12`) and versions (`0.1.0`). |

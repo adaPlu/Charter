@@ -1,0 +1,3 @@
+// "match" is a reserved word, so it cannot name an entity. "Match" (capital M) can.
+module bad@0.1.0
+entity match { ext: Text }

@@ -1,0 +1,38 @@
+// Design doc, Phase 5, example 5: game progression, with the gaps from that example fixed:
+// the identity import is added, and RecordMatch now declares the enum it rejects with.
+module progression@0.1.0
+import identity@^1 as idn
+principal Player by account
+
+enum Ability { Dash, Shield, Blink }
+enum RecordError { AlreadyRecorded }
+entity Player { account: Id<idn.Account>, xp: Int where >= 0 = 0, level: Int where >= 1 = 1 }
+entity Unlock { player: Id<Player>, ability: Ability }
+entity Match  { ext: Text }
+type Award = { player: Id<Player>, xp: Int where it >= 0 and it <= 1000 }
+
+fn levelFor(xp: Int where >= 0): Int where >= 1 =
+  if xp >= 4500 then 10 else if xp >= 3600 then 9 else if xp >= 2800 then 8
+  else if xp >= 2100 then 7 else if xp >= 1500 then 6 else if xp >= 1000 then 5
+  else if xp >= 600 then 4 else if xp >= 300 then 3 else if xp >= 100 then 2 else 1
+fn unlockLevel(a: Ability): Int = match a { Dash => 2, Shield => 5, Blink => 8 }
+
+rule RecordMatch(ext: Text, awards: List<Award>) rejects RecordError
+  permit system
+  guard not exists m in Match: m.ext == ext else reject AlreadyRecorded
+  create Match { ext = ext }
+  for a in awards {
+    let pl = Player[a.player]
+    if pl != none {
+      set pl.xp = pl.xp + a.xp
+      set pl.level = levelFor(pl.xp)
+      for ab in [Dash, Shield, Blink] {
+        if unlockLevel(ab) <= pl.level and not exists u in Unlock: u.player == pl.id and u.ability == ab {
+          create Unlock { player = pl.id, ability = ab }
+        }
+      }
+    }
+  }
+
+invariant LevelMatchesXP: Player.level == levelFor(Player.xp)
+invariant UnlocksEarned: forall u in Unlock: exists p in Player: p.id == u.player and unlockLevel(u.ability) <= p.level

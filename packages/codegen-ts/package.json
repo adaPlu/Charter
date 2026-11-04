@@ -1,0 +1,21 @@
+{
+  "name": "@charter/codegen-ts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TypeScript, SQL schema, HTTP layer and typed client generation.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 5
+  },
+  "dependencies": {
+    "@charter/cir": "workspace:*",
+    "@charter/graph": "workspace:*",
+    "@charter/resolve": "workspace:*",
+    "@charter/runtime-ts": "workspace:*",
+    "@charter/syntax": "workspace:*",
+    "@charter/types": "workspace:*",
+    "@charter/verify": "workspace:*"
+  }
+}

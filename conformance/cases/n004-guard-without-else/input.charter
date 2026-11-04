@@ -1,0 +1,9 @@
+// Every guard names the rejection it produces. A bare guard is a syntax error.
+module bad@0.1.0
+principal User
+entity User { name: Text }
+entity Product { stock: Int where >= 0 }
+rule Take(p: Product)
+  permit anyone
+  guard p.stock > 0
+  set p.stock = p.stock - 1

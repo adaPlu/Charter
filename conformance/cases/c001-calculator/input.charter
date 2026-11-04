@@ -1,0 +1,34 @@
+// Design doc, Phase 5, example 1: calculator with validation.
+module calc@0.1.0
+
+requirement R-1 confirmed "Add, subtract, multiply and divide two numbers."
+requirement R-2 confirmed "Invalid input shows an error instead of crashing."
+requirement R-3 inferred  "Numbers are exact decimals with up to 18 digits after the point."
+requirement R-4 inferred  "Division rounds half to even at 18 digits."
+requirement R-5 inferred  "Inputs are limited to plus or minus 10^15."
+
+type Input = Decimal where it >= -1000000000000000 and it <= 1000000000000000   req R-5
+enum Op { Add, Sub, Mul, Div }
+enum CalcError { DivideByZero }
+enum CalcResult { Value(v: Decimal), Error(e: CalcError) }
+
+fn calculate(a: Decimal, b: Decimal, op: Op): CalcResult =
+  match op {
+    Add => Value(a + b),
+    Sub => Value(a - b),
+    Mul => Value(a * b),
+    Div => if b == 0 then Error(DivideByZero) else Value(a / b)
+  }                                                                  req R-1, R-2, R-4
+
+query Calculate(a: Input, b: Input, op: Op): CalcResult permit anyone = calculate(a, b, op)
+  req R-1, R-2
+
+test "divide by zero gives an error" { when Calculate(1, 0, Div) expect ok then result == Error(DivideByZero) }
+test "2.5 times 4 is 10"             { when Calculate(2.5, 4, Mul) expect ok then result == Value(10) }
+test "too-large input is rejected"   { when Calculate(10000000000000000, 1, Add) expect reject ValidationError }
+
+property "adding then subtracting gives back the first number"
+  forall a: Input, b: Input {
+    when Calculate(a, b, Add) expect ok
+    then match result { Value(s) => calculate(s, b, Sub) == Value(a), Error(_) => false }
+  }

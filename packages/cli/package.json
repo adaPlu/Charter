@@ -1,0 +1,29 @@
+{
+  "name": "@charter/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The charter command. Reaches intent only through the lazily loaded ask command.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 1
+  },
+  "dependencies": {
+    "@charter/cir": "workspace:*",
+    "@charter/codegen-ts": "workspace:*",
+    "@charter/effects": "workspace:*",
+    "@charter/explain": "workspace:*",
+    "@charter/graph": "workspace:*",
+    "@charter/impact": "workspace:*",
+    "@charter/intent": "workspace:*",
+    "@charter/interp": "workspace:*",
+    "@charter/resolve": "workspace:*",
+    "@charter/runtime-ts": "workspace:*",
+    "@charter/store": "workspace:*",
+    "@charter/syntax": "workspace:*",
+    "@charter/testing": "workspace:*",
+    "@charter/types": "workspace:*",
+    "@charter/verify": "workspace:*"
+  }
+}

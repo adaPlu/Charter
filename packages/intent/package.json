@@ -1,0 +1,26 @@
+{
+  "name": "@charter/intent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Utterance log, requirement store, frames, lowering templates, clarification policy, repair loop, intent ledger.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 7
+  },
+  "dependencies": {
+    "@charter/effects": "workspace:*",
+    "@charter/explain": "workspace:*",
+    "@charter/graph": "workspace:*",
+    "@charter/impact": "workspace:*",
+    "@charter/interp": "workspace:*",
+    "@charter/llm": "workspace:*",
+    "@charter/resolve": "workspace:*",
+    "@charter/store": "workspace:*",
+    "@charter/syntax": "workspace:*",
+    "@charter/testing": "workspace:*",
+    "@charter/types": "workspace:*",
+    "@charter/verify": "workspace:*"
+  }
+}

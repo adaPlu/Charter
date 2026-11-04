@@ -1,0 +1,163 @@
+(* Charter grammar, version 0.1 (frozen baseline from milestone 0)
+
+   Merges the Phase 2 grammar with amendments A2, A8, A9, A11, A12 and the milestone 0
+   clarifications A14 to A20 (see spec/amendments.md). Changing this file changes its hash,
+   and scripts/check-grammar.mjs then fails until the lock is renewed with an amendment entry.
+
+   Notation (ISO 14977 subset, juxtaposition for sequence):
+     "x"        terminal          [ a ]     optional         { a }   zero or more
+     a | b      choice            ( a )     grouping         ? .. ?  special sequence (lexical)
+
+   Lexical rules: whitespace and "//" comments to end of line separate tokens and are
+   otherwise ignored. Every alphabetic terminal below is a reserved word and is never an
+   ident. Names are case-sensitive, so "Match" is an ident while "match" is reserved.
+
+   Disambiguation (A18): an expression that follows "where", ":", "then", "else", "=>",
+   "implies" or "=" extends as far to the right as it can (longest match), as in a
+   recursive-descent parser. Comparisons do not chain, so "a == b == c" is an error, while
+   "count x in E where a == b == 0" reads as "(count x in E where a == b) == 0". *)
+
+(* ---------- program ---------- *)
+
+program      = module_decl { import } { decl } ;
+module_decl  = "module" qname "@" version ;
+import       = "import" qname "@" verspec [ "as" ident ] ;
+decl         = requirement | uses | principal | type_decl | enum_decl | entity
+             | fn_decl | extern_fn | permission | rule | event | trigger
+             | invariant | assert | query | test | property | migration ;
+
+(* ---------- requirements, capabilities, principal ---------- *)
+
+requirement  = "requirement" req_id status string ;
+status       = "confirmed" | "inferred" | "open" ;
+uses         = "uses" capability { "," capability } ;
+capability   = ident "." ident ;
+principal    = "principal" ident [ "by" ident ] ;                       (* A9 *)
+
+(* ---------- types and entities ---------- *)
+
+type_decl    = "type" ident "=" type [ links ] ;                        (* links: A16 *)
+enum_decl    = "enum" ident "{" variant { "," variant } "}" [ links ] ;  (* links: A16 *)
+variant      = ident [ "(" field_list ")" ] ;
+entity       = "entity" ident "{" field_list "}" [ links ] ;
+field_list   = field { "," field } ;
+field        = ident ":" type [ "=" expr ] ;
+
+type         = base [ "?" ] [ "where" refinement ] ;
+base         = "Bool" | "Int" | "Decimal" | "Money" | "Text" | "Time" | "Duration"
+             | "Id" "<" qname ">"                                       (* qname: A14 *)
+             | "List" "<" type ">" | "Set" "<" type ">"
+             | "Map" "<" type "," type ">"
+             | "{" field_list "}"
+             | qname ;                                                  (* qname: A14 *)
+refinement   = cmp_op coalesce | expr ;                                 (* expr form uses "it" *)
+
+(* ---------- functions, permissions ---------- *)
+
+fn_decl      = "fn" ident "(" [ params ] ")" ":" type "=" expr [ links ] ;
+extern_fn    = "extern" "fn" ident "(" [ params ] ")" ":" type ;
+params       = param { "," param } ;
+param        = ident ":" type ;
+permission   = "permission" ident "(" [ params ] ")" "=" expr [ links ] ;
+
+(* ---------- rules ---------- *)
+
+(* A17: rule-level links come right after the signature. A "req" at the end of a rule
+   belongs to its last clause. *)
+rule         = "rule" ident "(" [ params ] ")" [ ":" type ] [ "rejects" ident ] [ links ]
+               permit { clause } ;
+permit       = "permit" ( "anyone" | "system" | expr ) [ links ] ;      (* "system": A9 *)
+clause       = ( let_clause | guard_clause | set_clause | create_clause | delete_clause
+               | for_clause | if_clause | emit_clause | raise_clause | return_clause ) [ links ] ;
+let_clause    = "let" ident "=" expr ;
+guard_clause  = "guard" expr "else" "reject" ident ;
+set_clause    = "set" lvalue "=" expr ;
+create_clause = "create" ident "{" [ assigns ] "}" [ "as" ident ] ;
+delete_clause = "delete" expr ;
+for_clause    = "for" ident "in" postfix "{" { clause } "}" ;
+if_clause     = "if" expr "{" { clause } "}" [ "else" "{" { clause } "}" ] ;
+emit_clause   = "emit" capability "(" [ args ] ")"
+                [ "confirm" "{" { clause } "}" ]                        (* A11 *)
+                [ "compensate" "{" { clause } "}" ] ;
+raise_clause  = "raise" ident "(" [ args ] ")" ;
+return_clause = "return" expr ;
+lvalue       = ident "." ident { "." ident } ;
+
+(* ---------- events, invariants, asserts, queries ---------- *)
+
+event        = "event" ident "(" [ params ] ")" ;
+trigger      = "on" qname "(" [ ident { "," ident } ] ")" "do" ident "(" [ args ] ")"
+               [ "as" "system" ] [ links ] ;                            (* qname: A14 *)
+invariant    = "invariant" ident ":" expr [ links ] ;
+assert       = "assert" ident ":" ident ( "permitted" | "succeeds" ) "implies" expr [ links ] ;   (* A2 *)
+query        = "query" ident "(" [ params ] ")" ":" type permit "=" expr [ links ] ;
+
+(* ---------- tests ---------- *)
+
+test         = "test" string "{" { given } act { act } "}" ;            (* several acts: A12 *)
+property     = "property" string "forall" params [ "where" expr ] "{" { given } act { act } "}" ;
+given        = "given" ident "=" "create" ident "{" [ assigns ] "}" ;
+act          = "when" ident "(" [ args ] ")" [ "as" expr ] "expect" outcome { "then" expr } ;
+outcome      = "ok" | "reject" ident | "any" ;
+
+(* ---------- migrations ---------- *)
+
+migration    = "migration" version "->" version "{" { mig_op } "}" ;
+mig_op       = "add" ident "." ident ":" type "=" expr
+             | "rename" ident "." ident "to" ident
+             | "drop" ident "." ident ;
+
+links        = "req" req_id { "," req_id } ;
+
+(* ---------- expressions, lowest to highest precedence ---------- *)
+
+expr         = if_expr | match_expr | or_expr ;
+if_expr      = "if" expr "then" expr "else" expr ;
+match_expr   = "match" expr "{" arm { "," arm } "}" ;
+arm          = pattern "=>" expr ;
+pattern      = "_" | ident [ "(" binder { "," binder } ")" ] ;
+binder       = ident | "_" ;                                            (* A19 *)
+or_expr      = and_expr { "or" and_expr } ;
+and_expr     = not_expr { "and" not_expr } ;
+not_expr     = "not" not_expr | quant_expr | cmp_expr ;                 (* A18 *)
+quant_expr   = ( "forall" | "exists" ) ident "in" postfix ":" expr ;
+cmp_expr     = coalesce [ cmp_op coalesce ] ;                           (* non-associative *)
+cmp_op       = "==" | "!=" | "<" | "<=" | ">" | ">=" | "in" ;
+coalesce     = add_expr { "??" add_expr } ;
+add_expr     = mul_expr { ( "+" | "-" ) mul_expr } ;
+mul_expr     = unary { ( "*" | "/" | "%" ) unary } ;
+unary        = [ "-" ] postfix ;
+postfix      = primary { "." ident | "(" [ args ] ")" | "[" expr "]" } ;
+primary      = literal | ident | "caller" | "now" | "it" | "result" | "effects"   (* "effects": A12 *)
+             | "old" "(" expr ")"
+             | aggregate                                               (* A18 *)
+             | "(" expr ")"
+             | "[" [ args ] "]"
+             | "{" assigns "}" ;
+aggregate    = "count" ident "in" postfix [ "where" expr ]
+             | "sum" or_expr "for" ident "in" postfix [ "where" expr ]
+             | "select" or_expr "for" ident "in" postfix [ "where" expr ]   (* A8 *)
+               [ "order" "by" expr { "," expr } ] ;
+args         = expr { "," expr } ;
+assigns      = ident "=" expr { "," ident "=" expr } ;
+literal      = int | decimal | string | duration | "true" | "false" | "none" ;
+
+(* ---------- lexical (A20) ---------- *)
+
+qname        = ident { "." ident } ;
+ident        = letter { letter | digit } ;                   (* minus reserved words *)
+letter       = ? any Unicode letter, or "_" ? ;
+digit        = ? "0" to "9" ? ;
+int          = digit { digit } ;
+decimal      = digit { digit } "." digit { digit } ;
+string       = ? a double quote, then any characters except an unescaped double quote or a
+                 newline, where \" \\ \n \t are escapes, then a double quote ? ;
+duration     = int ( "ms" | "s" | "m" | "h" | "d" ) ;        (* no space, e.g. 30s *)
+req_id       = "R-" digit { digit } ;                         (* no spaces, e.g. R-12 *)
+version      = int "." int "." int ;                          (* one token, e.g. 0.1.0 *)
+verspec      = [ "^" | "~" ] ( version | decimal | int ) ;    (* A15: ^1, ^1.0 or ^1.0.0 *)
+
+(* Token classes. The rules ident, int, decimal, string, duration, req_id and version each
+   describe one token. Their bodies are character-level definitions, so the terminals inside
+   them ("R-", "ms", "s", ...) are not reserved words. letter and digit exist only to define
+   tokens. *)

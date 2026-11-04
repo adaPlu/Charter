@@ -1,0 +1,86 @@
+// Design doc, Phase 5, example 3: REST API with authentication and authorization,
+// including the collaborator change set from Phase 3.
+module projects@1.0.0
+import identity@^1.0 as idn
+principal User by account
+
+requirement R-1  confirmed "Users can register and log in."
+requirement R-3  confirmed "Users can create, rename and delete their projects."
+requirement R-4  confirmed "When a user creates a project, they become its owner."
+requirement R-5  confirmed "Only the owner or an admin may modify or delete a project."
+requirement R-6  confirmed "Admins can view, edit and delete any project."
+requirement R-8  confirmed "Only the operator can make someone an admin."
+requirement R-10 confirmed "Owners and admins can invite collaborators with read-only access."
+requirement R-12 confirmed "Owners and admins can remove collaborators."
+requirement R-13 inferred  "Project names are 1 to 100 characters and not blank."
+
+enum Role { Member, Admin }
+entity User { account: Id<idn.Account>, email: Text, role: Role = Member }
+type Name = Text where len(trim(it)) >= 1 and len(it) <= 100                        req R-13
+entity Project { owner: Id<User>, name: Name }
+entity Collaborator { project: Id<Project>, user: Id<User> }
+type ProjectView = { id: Id<Project>, name: Text, owner: Id<User> }
+enum InviteError { IsOwner, AlreadyInvited, NotInvited }
+
+permission CanEdit(u: User, p: Project) = p.owner == u.id or u.role == Admin       req R-5, R-6
+permission CanView(u: User, p: Project) =
+  CanEdit(u, p) or exists c in Collaborator: c.project == p.id and c.user == u.id   req R-10
+
+on idn.Registered(acct, email) do CreateUser(acct, email) as system                req R-1
+rule CreateUser(acct: Id<idn.Account>, email: Text): Id<User>
+  permit system
+  create User { account = acct, email = email } as u
+  return u.id
+
+rule PromoteToAdmin(u: User) req R-8 permit system  set u.role = Admin
+
+rule CreateProject(name: Name): Id<Project> req R-4
+  permit anyone
+  create Project { owner = caller.id, name = name } as p
+  return p.id
+
+rule RenameProject(p: Project, name: Name) req R-3, R-5
+  permit CanEdit(caller, p)
+  set p.name = name
+
+rule DeleteProject(p: Project) req R-3, R-5
+  permit CanEdit(caller, p)
+  for k in (select c for c in Collaborator where c.project == p.id) { delete k }
+  delete p
+
+rule InviteCollaborator(p: Project, u: User) rejects InviteError req R-10
+  permit CanEdit(caller, p)
+  guard u.id != p.owner else reject IsOwner
+  guard not exists c in Collaborator: c.project == p.id and c.user == u.id else reject AlreadyInvited
+  create Collaborator { project = p.id, user = u.id }
+
+rule RemoveCollaborator(p: Project, u: User) rejects InviteError req R-12
+  permit CanEdit(caller, p)
+  guard exists c in Collaborator: c.project == p.id and c.user == u.id else reject NotInvited
+  for k in (select c for c in Collaborator where c.project == p.id and c.user == u.id) { delete k }
+
+query GetProject(p: Project): ProjectView permit CanView(caller, p) =
+  { id = p.id, name = p.name, owner = p.owner }                                    req R-10
+query MyProjects(): List<ProjectView> permit anyone =
+  select { id = p.id, name = p.name, owner = p.owner } for p in Project
+    where CanView(caller, p) order by p.name                                       req R-3, R-6
+
+assert WritesNeedEdit:  RenameProject permitted implies p.owner == caller.id or caller.role == Admin   req R-5
+assert DeletesNeedEdit: DeleteProject permitted implies p.owner == caller.id or caller.role == Admin   req R-5
+
+test "collaborator cannot rename" {
+  given o = create User { account = "a1", email = "o@x" }
+  given b = create User { account = "a2", email = "b@x" }
+  given p = create Project { owner = o.id, name = "Apollo" }
+  when InviteCollaborator(p, b) as o expect ok
+  when RenameProject(p, "Hijacked") as b expect reject Denied
+  then p.name == "Apollo"
+}
+test "admin can delete someone else's project, and collaborators go too" {
+  given o = create User { account = "a1", email = "o@x" }
+  given a = create User { account = "a3", email = "a@x", role = Admin }
+  given p = create Project { owner = o.id, name = "Apollo" }
+  given c = create Collaborator { project = p.id, user = a.id }
+  when DeleteProject(p) as a expect ok
+  then count x in Collaborator where x.project == p.id == 0
+}

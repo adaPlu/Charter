@@ -1,0 +1,17 @@
+{
+  "name": "charter",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Charter: an AI-native language where humans state intent, AI writes formal programs, and deterministic tools verify and run them.",
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "check": "node scripts/check-layers.mjs && node scripts/check-grammar.mjs && node scripts/check-conformance.mjs",
+    "test": "node --test \"scripts/*.test.mjs\"",
+    "ci": "npm run check && npm run test",
+    "scaffold": "node scripts/scaffold-packages.mjs",
+    "grammar:relock": "node scripts/check-grammar.mjs --write-lock",
+    "design:build": "node scripts/build-design-doc.mjs"
+  }
+}

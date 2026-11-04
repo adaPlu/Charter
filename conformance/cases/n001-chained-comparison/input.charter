@@ -1,0 +1,4 @@
+// Comparisons do not chain. "a == b == c" must be written with parentheses.
+module bad@0.1.0
+entity Point { x: Int, y: Int, z: Int }
+invariant Flat: forall p in Point: p.x == p.y == p.z

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+# Local proof caches are rebuilt; the shared one is committed under spec/ from milestone 1.
+.charter-cache/

@@ -1,0 +1,19 @@
+{
+  "name": "@charter/explain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Deterministic gloss templates.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 7
+  },
+  "dependencies": {
+    "@charter/graph": "workspace:*",
+    "@charter/resolve": "workspace:*",
+    "@charter/syntax": "workspace:*",
+    "@charter/types": "workspace:*",
+    "@charter/verify": "workspace:*"
+  }
+}

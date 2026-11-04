@@ -1,0 +1,15 @@
+// The property from Phase 5, example 3. It compares result with the outcome "ok", which the
+// grammar has no way to express yet. This is an open question owned by milestone 2
+// (design doc, section 8.6). When it is settled, this case moves to "parse": "ok".
+module projects@1.0.0
+enum Role { Member, Admin }
+entity User { email: Text, role: Role = Member }
+entity Project { owner: Id<User>, name: Text }
+property "rename succeeds exactly for owners and admins"
+  forall r: Role, isOwner: Bool {
+    given o = create User { email = "o@x" }
+    given u = create User { email = "u@x", role = r }
+    given p = create Project { owner = if isOwner then u.id else o.id, name = "Apollo" }
+    when RenameProject(p, "New") as u expect any
+    then (result == ok) == (isOwner or r == Admin)
+  }

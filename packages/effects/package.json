@@ -1,0 +1,15 @@
+{
+  "name": "@charter/effects",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Capability registry, outbox, dispatcher, confirm and compensate, adapters and their conformance suites.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 4
+  },
+  "dependencies": {
+    "@charter/store": "workspace:*"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Inventory and ordering with reserve, charge, confirm or compensate",
+  "source": "Design doc, Phase 5, example 4. Rule-level links moved after the signature (A17).",
+  "covers": ["A11", "A12", "A17", "A18"],
+  "expect": { "parse": "ok" },
+  "later": {
+    "M1": "check: ok, including the T-Sub obligation amount > 0 at the emit, discharged by the if.",
+    "M3": "StockNonNegative Proven for PlaceOrder, its compensation (A3), its confirm (frame) and Restock. PaidHasNoFailure Proven.",
+    "M4": "Every row of the failure table in Phase 5 has a passing runtime test."
+  }
+}

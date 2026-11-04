@@ -1,0 +1,13 @@
+{
+  "name": "@charter/store",
+  "version": "0.0.0",
+  "private": true,
+  "description": "SQLite store, single-writer queue, snapshots, migration runner with dry run. Runtime-level: no compiler imports.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 2
+  },
+  "dependencies": {}
+}

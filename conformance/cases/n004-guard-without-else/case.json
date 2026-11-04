@@ -1,0 +1,6 @@
+{
+  "title": "Guard without else reject is rejected",
+  "source": "spec/charter.ebnf, guard_clause",
+  "covers": [],
+  "expect": { "parse": { "error": { "line": 9 } } }
+}

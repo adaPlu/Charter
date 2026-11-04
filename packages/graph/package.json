@@ -1,0 +1,15 @@
+{
+  "name": "@charter/graph",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Node schema, anchors, canonical CBOR, hashes, JSON form, anchor matching, operation applier.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 1
+  },
+  "dependencies": {
+    "@charter/syntax": "workspace:*"
+  }
+}

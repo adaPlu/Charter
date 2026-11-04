@@ -1,0 +1,25 @@
+{
+  "name": "@charter/testing",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Test and property runner, refinement-driven generators, mutation engine, differential tester.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 1
+  },
+  "dependencies": {
+    "@charter/cir": "workspace:*",
+    "@charter/codegen-ts": "workspace:*",
+    "@charter/effects": "workspace:*",
+    "@charter/graph": "workspace:*",
+    "@charter/interp": "workspace:*",
+    "@charter/resolve": "workspace:*",
+    "@charter/runtime-ts": "workspace:*",
+    "@charter/store": "workspace:*",
+    "@charter/syntax": "workspace:*",
+    "@charter/types": "workspace:*",
+    "@charter/verify": "workspace:*"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@charter/resolve",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Name resolution and the behavioral dependency graph (amendment A1).",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "charter": {
+    "milestone": 1
+  },
+  "dependencies": {
+    "@charter/graph": "workspace:*",
+    "@charter/syntax": "workspace:*"
+  }
+}

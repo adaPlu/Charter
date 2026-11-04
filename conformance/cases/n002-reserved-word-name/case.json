@@ -1,0 +1,6 @@
+{
+  "title": "Reserved word used as a name is rejected",
+  "source": "spec/charter.ebnf, header: every alphabetic terminal is reserved",
+  "covers": ["A20"],
+  "expect": { "parse": { "error": { "line": 3 } } }
+}

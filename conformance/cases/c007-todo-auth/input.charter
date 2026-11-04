@@ -1,0 +1,35 @@
+// Design doc, Phase 6, "Add authentication, but don't change the existing database schema."
+// Change set CS-A followed by CS-B, applied to the single-user to-do app.
+module todo@0.3.0
+import identity@^1.0 as idn
+principal User by account
+
+requirement R-1 confirmed "Add a task with a title and an optional due date."
+requirement R-5 confirmed "Each person sees and changes only their own tasks."
+requirement R-10 confirmed "Existing tasks belong to ana@example.com."
+
+entity User { account: Id<idn.Account>, email: Text }
+entity Task { title: Text, due: Time?, done: Bool = false, created: Time }
+entity TaskOwner { task: Id<Task>, owner: Id<User> }
+
+permission Owns(u: User, t: Task) = exists o in TaskOwner: o.task == t.id and o.owner == u.id   req R-5
+
+rule AddTask(title: Text, due: Time?): Id<Task> req R-1, R-5
+  permit anyone
+  create Task { title = title, due = due, created = now } as t
+  create TaskOwner { task = t.id, owner = caller.id }
+  return t.id
+
+rule DeleteTask(t: Task) req R-5
+  permit Owns(caller, t)
+  for k in (select o for o in TaskOwner where o.task == t.id) { delete k }
+  delete t
+
+rule ClaimExistingTasks(u: User) req R-10
+  permit system
+  for t in (select x for x in Task where not exists o in TaskOwner: o.task == x.id) {
+    create TaskOwner { task = t.id, owner = u.id }
+  }
+
+// CS-B, applied after the operator runs ClaimExistingTasks.
+invariant EveryTaskOwned: forall t in Task: exists o in TaskOwner: o.task == t.id   req R-5
