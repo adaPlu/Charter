@@ -1,0 +1,20 @@
+// Amendment A25: a query that returns a whole entity exposes every field, including ones the
+// caller may not be meant to see (here, the email address). The checker warns; the fix is a
+// view record with only the fields callers need.
+module people@0.1.0
+principal User
+entity User { name: Text, email: Text }
+type UserView = { name: Text }
+
+query Everyone(): List<User> permit anyone =
+  select u for u in User
+
+query Names(): List<UserView> permit anyone =
+  select { name = u.name } for u in User order by u.name
+
+test "names are listed without emails" {
+  given a = create User { name = "Ana", email = "ana@example.com" }
+  given b = create User { name = "Ben", email = "ben@example.com" }
+  when Names() as b expect ok
+  then result == [{ name = "Ana" }, { name = "Ben" }]
+}

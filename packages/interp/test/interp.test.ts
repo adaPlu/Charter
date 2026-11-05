@@ -65,3 +65,112 @@ fn h(xs: List<Int>): Bool = forall x in xs: x > 0`);
   assert.equal(show(i.callFn("g", [arg(i, "[1, 2, 3, 4]")])), "6");
   assert.equal(show(i.callFn("h", [arg(i, "[1, 2]")])), "true");
 });
+
+// ---------------------------------------------------------------- rules and the store
+
+const shop = `module shop@0.2.0
+uses Payment.charge
+principal Customer
+entity Customer { name: Text, active: Bool = true }
+entity Product  { name: Text, price: Money where >= 0, stock: Int where >= 0 }
+entity Order { customer: Id<Customer>, product: Id<Product>, qty: Int, amount: Money }
+enum OrderError { OutOfStock }
+rule PlaceOrder(p: Product, qty: Int where > 0): Id<Order> rejects OrderError
+  permit caller.active
+  guard p.stock >= qty else reject OutOfStock
+  let amount = p.price * qty
+  set p.stock = p.stock - qty
+  create Order { customer = caller.id, product = p.id, qty = qty, amount = amount } as o
+  emit Payment.charge(caller.id, amount, o.id)
+  return o.id
+rule Break(p: Product) permit system  set p.stock = 0 - 1
+rule DeleteProduct(p: Product) permit system  delete p
+invariant StockNonNegative: Product.stock >= 0`;
+
+test("a rule commits its writes, its effects and its step record together", () => {
+  const i = run(shop);
+  const ana = i.createRecord("Customer", [["name", { t: "text", v: "Ana" }]]);
+  const lamp = i.createRecord("Product", [["name", { t: "text", v: "Lamp" }], ["price", arg(i, "40.00")], ["stock", arg(i, "1")]]);
+  const r = i.callRule("PlaceOrder", [lamp, arg(i, "1")], { caller: ana });
+  assert.equal(r.outcome.kind, "ok");
+  assert.equal(r.effects.length, 1);
+  assert.equal(show(i.evalClosed(parseExpr("count o in Order"))), "1");
+  assert.equal(show(i.evalClosed(parseExpr("sum o.amount for o in Order"))), "40.00");
+  assert.equal(i.store.outbox().length, 1);
+  assert.equal(i.store.steps().length, 1);
+});
+
+test("two orders for the last unit: one wins, the other is rejected and changes nothing", () => {
+  const i = run(shop);
+  const a = i.createRecord("Customer", [["name", { t: "text", v: "Ana" }]]);
+  const b = i.createRecord("Customer", [["name", { t: "text", v: "Ben" }]]);
+  const lamp = i.createRecord("Product", [["name", { t: "text", v: "Lamp" }], ["price", arg(i, "40.00")], ["stock", arg(i, "1")]]);
+  assert.equal(i.callRule("PlaceOrder", [lamp, arg(i, "1")], { caller: a }).outcome.kind, "ok");
+  const second = i.callRule("PlaceOrder", [lamp, arg(i, "1")], { caller: b });
+  assert.deepEqual(second.outcome, { kind: "reject", name: "OutOfStock" });
+  assert.equal(second.effects.length, 0);
+  assert.equal(i.store.outbox().length, 1, "the rejected order queued no charge");
+  assert.equal(i.store.steps().length, 2, "the rejection is still logged");
+});
+
+test("permits, missing entities, refinements and invariants each reject correctly", () => {
+  const i = run(shop);
+  const off = i.createRecord("Customer", [["name", { t: "text", v: "Off" }], ["active", { t: "bool", v: false }]]);
+  const on = i.createRecord("Customer", [["name", { t: "text", v: "On" }]]);
+  const lamp = i.createRecord("Product", [["name", { t: "text", v: "Lamp" }], ["price", arg(i, "40.00")], ["stock", arg(i, "5")]]);
+  assert.deepEqual(i.callRule("PlaceOrder", [lamp, arg(i, "1")], { caller: off }).outcome, { kind: "reject", name: "Denied" });
+  assert.deepEqual(i.callRule("PlaceOrder", [lamp, arg(i, "1")], {}).outcome, { kind: "reject", name: "Denied" }, "no caller");
+  assert.deepEqual(i.callRule("PlaceOrder", [{ t: "text", v: "nope" }, arg(i, "1")], { caller: on }).outcome, { kind: "reject", name: "NotFound", detail: "p" });
+  assert.deepEqual(i.callRule("PlaceOrder", [lamp, arg(i, "0")], { caller: on }).outcome, { kind: "reject", name: "ValidationError", detail: "qty" });
+  assert.deepEqual(i.callRule("Break", [lamp], { system: true }).outcome, { kind: "reject", name: "InvariantViolated", detail: "StockNonNegative" });
+  assert.deepEqual(i.callRule("Break", [lamp], { caller: on }).outcome, { kind: "reject", name: "Denied" }, "permit system");
+  assert.equal(show(i.evalClosed(parseExpr("sum p.stock for p in Product"))), "5", "nothing changed");
+});
+
+test("deleting a referenced entity breaks referential integrity and is rolled back", () => {
+  const i = run(shop);
+  const a = i.createRecord("Customer", [["name", { t: "text", v: "Ana" }]]);
+  const lamp = i.createRecord("Product", [["name", { t: "text", v: "Lamp" }], ["price", arg(i, "40.00")], ["stock", arg(i, "5")]]);
+  assert.equal(i.callRule("PlaceOrder", [lamp, arg(i, "1")], { caller: a }).outcome.kind, "ok");
+  const r = i.callRule("DeleteProduct", [lamp], { system: true });
+  assert.deepEqual(r.outcome, { kind: "reject", name: "InvariantViolated", detail: "Order.product must refer to an existing Product" });
+});
+
+test("Money rounds to cents, half to even", () => {
+  const i = run("module m@0.1.0 fn f(p: Money, q: Decimal): Money = p * q");
+  assert.equal(show(i.callFn("f", [arg(i, "10.00"), arg(i, "0.125")])), "1.25");
+  assert.equal(show(i.callFn("f", [arg(i, "10.00"), arg(i, "0.135")])), "1.35");
+  assert.equal(show(i.callFn("f", [arg(i, "1.00"), arg(i, "0.005")])), "0.00");
+  assert.equal(show(i.callFn("f", [arg(i, "1.00"), arg(i, "0.015")])), "0.02");
+});
+
+test("replay reproduces every outcome and the exact state, ids included", () => {
+  const i = run(shop.replace("rule Break", "rule Seed(n: Text) permit system  create Customer { name = n }\nrule Stock(n: Text, s: Int) permit system  create Product { name = n, price = 40.00, stock = s }\nrule Break"));
+  i.callRule("Seed", [{ t: "text", v: "Ana" }], { system: true });
+  i.callRule("Stock", [{ t: "text", v: "Lamp" }, arg(i, "2")], { system: true });
+  const ana = i.evalClosed(parseExpr("select c for c in Customer")) as { t: "list"; items: never[] };
+  const lamp = i.evalClosed(parseExpr("select p for p in Product")) as { t: "list"; items: never[] };
+  for (let k = 0; k < 3; k++) i.callRule("PlaceOrder", [lamp.items[0]!, arg(i, "1")], { caller: ana.items[0]! });
+  const r = i.replay();
+  assert.equal(r.steps, 5);
+  assert.deepEqual(r.mismatches, []);
+  assert.equal(r.replayedHash, r.stateHash);
+});
+
+test("events run their triggers as later steps", () => {
+  const i = run(`module m@0.1.0
+entity Note { text: Text }
+entity Log { line: Text }
+event Noted(n: Id<Note>)
+on Noted(n) do Record(n) as system
+rule AddNote(t: Text) permit anyone
+  create Note { text = t } as n
+  raise Noted(n.id)
+rule Record(n: Note) permit system
+  create Log { line = "noted " + n.text }`);
+  const r = i.callRule("AddNote", [{ t: "text", v: "hi" }]);
+  assert.equal(r.outcome.kind, "ok");
+  assert.deepEqual(r.triggered.map((t) => [t.rule, t.outcome.kind]), [["Record", "ok"]]);
+  assert.equal(show(i.evalClosed(parseExpr("select l.line for l in Log"))), '["noted hi"]');
+  assert.deepEqual(i.replay().mismatches, []);
+});

@@ -5,19 +5,21 @@
     "A9",
     "A14",
     "A15",
-    "A18"
+    "A18",
+    "A24"
   ],
   "expect": {
     "parse": "ok",
     "check": {
       "errors": [],
       "proven": [
-        "the result of levelFor satisfies \"it >= 1\""
-      ]
+        "the result of levelFor satisfies \"it >= 1\"",
+        "argument xp of levelFor satisfies \"it >= 0\""
+      ],
+      "runtime": 1
     }
   },
   "later": {
-    "M2": "Decide whether set through the narrowed optional binding pl is allowed (Phase 5, gap 2). Until then, check reports it.",
     "M3": "LevelMatchesXP and UnlocksEarned Unproven for RecordMatch (nested loops), kept as runtime checks."
   }
 }

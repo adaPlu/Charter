@@ -8,7 +8,7 @@
   "engines": { "node": ">=22.18" },
   "bin": { "charter": "packages/cli/src/main.ts" },
   "scripts": {
-    "check": "node scripts/check-layers.mjs && node scripts/check-grammar.mjs && node scripts/check-conformance.mjs",
+    "check": "node scripts/check-layers.mjs && node scripts/check-grammar.mjs && node scripts/check-conformance.mjs && node scripts/export-gbnf.mjs --check",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test --test-force-exit \"scripts/*.test.mjs\" \"packages/*/test/*.test.ts\"",
     "ci": "npm run check && npm run typecheck && npm run test",

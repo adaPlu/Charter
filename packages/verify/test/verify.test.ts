@@ -79,5 +79,55 @@ test("results are cached by the exact query, and the cache is stable", async () 
 
 test("the SMT-LIB form is readable", () => {
   const [o] = obligationsOf("module m@0.1.0 fn f(a: Decimal, b: Decimal): Decimal = if b == 0 then 0 else a / b").filter((x) => x.kind === "nonzero");
-  assert.equal(toSmtLib(o!), "(declare-const |b| Real)\n(assert (not (= |b| 0.0)))\n(assert (not (not (= |b| 0.0))))\n(check-sat)");
+  assert.equal(toSmtLib(o!), [
+    "(declare-const |b| Real)",
+    "(assert (< (- 100000000000000000000000000000000000000.0) |b| 100000000000000000000000000000000000000.0))",
+    "(assert (not (= |b| 0.0)))",
+    "(assert (not (not (= |b| 0.0))))",
+    "(check-sat)",
+  ].join("\n"));
+});
+
+test("a compensation is checked against the state when it runs, not the step's own writes", async () => {
+  const src = `module m@0.1.0
+uses Pay.charge
+entity P { stock: Int where >= 0 }
+rule Take(p: P, q: Int where it >= 1 and it <= 10) permit anyone
+  guard p.stock >= q else reject Out
+  set p.stock = p.stock - q
+  emit Pay.charge(q)
+    compensate { set p.stock = p.stock + q }
+enum E { Out }`.replace("permit anyone", "rejects E permit anyone");
+  const r = parse(src);
+  assert.ok(r.program, r.diagnostics[0]?.message);
+  const c = check(r.program);
+  assert.deepEqual(c.diagnostics.filter((d) => d.severity === "error").map((d) => d.message), []);
+  const results = await prove(c.obligations);
+  const byClaim = Object.fromEntries(results.map((x) => [`${x.obligation.claim}@${x.obligation.span.line}`, x.status]));
+  // In the step: stock >= q >= 1, so stock - q cannot overflow.
+  assert.equal(byClaim["p.stock - q stays within the Int range@6"], "proven");
+  // Later, stock may have grown to the maximum, so adding q may overflow: a runtime check.
+  assert.equal(byClaim["p.stock + q stays within the Int range@8"], "unproven");
+});
+
+test("facts about a field describe its old value after a write, and aliases become unknown", async () => {
+  const base = `module m@0.1.0
+entity P { stock: Int where >= 0, hold: Int }
+fn half(x: Int where >= 0): Int = x / 2
+rule Shift(a: P, b: P) permit anyone
+  BODY`;
+  const status = async (body: string) => {
+    const c = check(parse(base.replace("BODY", body)).program!);
+    assert.deepEqual(c.diagnostics.filter((d) => d.severity === "error").map((d) => d.message), []);
+    return (await prove(c.obligations.filter((o) => o.kind === "refinement")))[0]!.status;
+  };
+  // After the write, a.stock means old + 1, and old >= 0 is still a fact about the old value.
+  assert.equal(await status(`set a.stock = a.stock + 1
+  set b.hold = half(a.stock)`), "proven");
+  // Writing b.stock may write a.stock too (a and b could be the same P), so a.stock is unknown.
+  assert.equal(await status(`set b.stock = 0
+  set a.hold = half(a.stock)`), "unproven");
+  // Writing a different field of b leaves a.stock alone.
+  assert.equal(await status(`set b.hold = 0 - 5
+  set a.hold = half(a.stock)`), "proven");
 });

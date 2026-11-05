@@ -9,10 +9,17 @@
     "A17"
   ],
   "expect": {
-    "parse": "ok"
+    "parse": "ok",
+    "check": {
+      "errors": [],
+      "tests": {
+        "pass": 3,
+        "fail": 0,
+        "skip": 0
+      }
+    }
   },
   "later": {
-    "M2": "check: ok. Title refinement Proven for every rule by frame reasoning.",
     "M3": "Both asserts Proven. Referential integrity of Task.owner Proven."
   }
 }

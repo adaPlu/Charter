@@ -735,7 +735,7 @@ class Parser {
       case "word":
         if (t.text === "true" || t.text === "false") { e = lit("bool", t.text); break; }
         if (t.text === "none") { e = lit("none", "none"); break; }
-        if (["caller", "now", "it", "result", "effects"].includes(t.text)) {
+        if (["caller", "now", "it", "result", "effects", "accepted"].includes(t.text)) {
           this.pos++;
           e = { kind: "Keyword", name: t.text as "caller", span };
           break;
@@ -747,7 +747,7 @@ class Parser {
       case "symbol":
         if (t.text === "(") { this.pos++; e = this.expr(); this.expect(")"); break; }
         if (t.text === "[") { this.pos++; const items = this.at("]") ? [] : this.args(); this.expect("]"); e = { kind: "ListLit", items, span }; break; }
-        if (t.text === "{") { this.pos++; const assigns = this.assigns(); this.expect("}"); e = { kind: "RecordLit", assigns, span }; break; }
+        if (t.text === "{") { this.pos++; const assigns = this.at("}") ? [] : this.assigns(); this.expect("}"); e = { kind: "RecordLit", assigns, span }; break; }
         this.fail("an expression");
       default: this.fail("an expression");
     }

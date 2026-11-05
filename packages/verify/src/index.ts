@@ -15,7 +15,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
-import type { Obligation, Term, Sort } from "@charter/types";
+import { INT_LIMIT, DECIMAL_LIMIT, type Obligation, type Term, type Sort } from "@charter/types";
 import { CODES, type Diagnostic } from "@charter/syntax";
 
 export const RLIMIT = 5_000_000;
@@ -62,7 +62,15 @@ export function toSmtLib(o: Obligation): string {
     ...[...vars].map(([n, s]) => `(declare-const |${n}| ${s})`),
     ...[...opaque.entries()].map(([key, v]) => `(declare-const ${v.name} ${v.sort}) ; ${key.replace(/\n/g, " ")}`),
   ];
-  return [...decls, ...facts, negated, "(check-sat)"].join("\n");
+  // Every Int value is within ±(2^53 - 1) and every Decimal within ±10^38, because producing
+  // anything else faults the step (A4, A13). So these bounds are facts about every value.
+  const bounds = [
+    ...[...vars].map(([n, s]) => [`|${n}|`, s] as const),
+    ...[...opaque.values()].map((v) => [v.name, v.sort] as const),
+  ].flatMap(([name, s]) =>
+    s === "Int" ? [`(assert (<= (- ${INT_LIMIT}) ${name} ${INT_LIMIT}))`]
+    : s === "Real" ? [`(assert (< (- ${DECIMAL_LIMIT}.0) ${name} ${DECIMAL_LIMIT}.0))`] : []);
+  return [...decls, ...bounds, ...facts, negated, "(check-sat)"].join("\n");
 }
 
 type Z3Api = Awaited<ReturnType<typeof import("z3-solver")["init"]>>;

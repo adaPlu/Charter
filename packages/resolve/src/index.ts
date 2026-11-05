@@ -10,7 +10,7 @@ import { ownHash, declKey, type Hash } from "@charter/graph";
 
 export const BUILTIN_FUNCTIONS = ["len", "trim", "lower", "upper", "contains", "abs", "min", "max"] as const;
 /** Outcomes every rule and query can produce without declaring them (design doc, 2.5 and A7). */
-export const BUILTIN_OUTCOMES = ["Denied", "NotFound", "ValidationError", "Conflict", "Disabled"] as const;
+export const BUILTIN_OUTCOMES = ["Denied", "NotFound", "ValidationError", "Conflict", "Disabled", "InvariantViolated"] as const;
 
 export type Ref =
   | { kind: "decl"; decl: Decl }

@@ -1,6 +1,6 @@
 {
   "version": "0.1",
-  "sha256": "16f7159711901f142d09990dd6a4fddca2fb0e0e842b496d372fd79dfa3e5cb5",
+  "sha256": "40d73c423d94deea1ba97fdd64f4bc0ca5dafd95544f474f102f57fa87efdb0e",
   "productions": 83,
   "syntacticRules": 74,
   "tokenClasses": 7,
@@ -17,6 +17,7 @@
     "Text",
     "Time",
     "_",
+    "accepted",
     "add",
     "and",
     "any",
@@ -139,6 +140,8 @@
     "A17",
     "A18",
     "A19",
-    "A20"
+    "A20",
+    "A22",
+    "A23"
   ]
 }

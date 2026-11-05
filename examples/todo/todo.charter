@@ -1,0 +1,69 @@
+// Design doc, Phase 5, example 2: task manager with persistence, runnable with charter serve.
+module todo@0.1.0
+principal User
+
+requirement R-1 confirmed "Add a task with a title and an optional due date."
+requirement R-2 confirmed "Mark a task done."
+requirement R-3 confirmed "Delete a task."
+requirement R-5 confirmed "Each person sees and changes only their own tasks."
+requirement R-6 inferred  "Titles are 1 to 200 characters and not blank."
+requirement R-7 inferred  "Done tasks cannot be reopened."
+requirement R-8 inferred  "Tasks are listed by due date with undated tasks last, then by creation time."
+
+entity User { name: Text }
+type Title = Text where len(trim(it)) >= 1 and len(it) <= 200                      req R-6
+entity Task { owner: Id<User>, title: Title, due: Time?, done: Bool = false, created: Time }
+type TaskView = { id: Id<Task>, title: Text, due: Time?, done: Bool }
+enum TaskError { AlreadyDone }
+
+permission Owns(u: User, t: Task) = t.owner == u.id                                req R-5
+
+rule AddTask(title: Title, due: Time?): Id<Task> req R-1
+  permit anyone
+  create Task { owner = caller.id, title = title, due = due, created = now } as t
+  return t.id
+
+rule CompleteTask(t: Task) rejects TaskError req R-2
+  permit Owns(caller, t)
+  guard not t.done else reject AlreadyDone                                         req R-7
+  set t.done = true
+
+rule DeleteTask(t: Task) req R-3
+  permit Owns(caller, t)
+  delete t
+
+query MyTasks(): List<TaskView> permit anyone =
+  select { id = t.id, title = t.title, due = t.due, done = t.done }
+    for t in Task where t.owner == caller.id order by t.due, t.created             req R-5, R-8
+
+assert OnlyOwnerChanges: CompleteTask permitted implies t.owner == caller.id       req R-5
+assert OnlyOwnerDeletes: DeleteTask permitted implies t.owner == caller.id         req R-5
+
+test "someone else cannot complete my task" {
+  given a = create User { name = "Ana" }
+  given b = create User { name = "Ben" }
+  given t = create Task { owner = a.id, title = "Buy milk", created = now }
+  when CompleteTask(t) as b expect reject Denied
+}
+test "completing twice is rejected" {
+  given a = create User { name = "Ana" }
+  given t = create Task { owner = a.id, title = "Buy milk", created = now }
+  when CompleteTask(t) as a expect ok
+  when CompleteTask(t) as a expect reject AlreadyDone
+}
+property "a list never shows another person's tasks"
+  forall title: Title {
+    given a = create User { name = "Ana" }
+    given b = create User { name = "Ben" }
+    given t = create Task { owner = a.id, title = title, created = now }
+    when MyTasks() as b expect ok
+    then forall v in result: exists x in Task: x.id == v.id and x.owner == b.id
+  }
+
+// For the served demo: an operator registers users (permit system), since login belongs to
+// the identity module, which arrives later.
+requirement R-10 inferred "An operator registers users."
+rule Register(name: Text): Id<User> req R-10
+  permit system
+  create User { name = name } as u
+  return u.id

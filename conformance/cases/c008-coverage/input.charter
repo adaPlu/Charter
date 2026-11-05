@@ -35,7 +35,7 @@ migration 0.1.0 -> 0.2.0 { rename Booking.note to memo  drop Account.tags }
 
 property "slots never shrink"
   forall s: Int where >= 1 {
-    given a = create Account { email = "a@x", prefs = [], tags = [] }
+    given a = create Account { email = "a@x", prefs = {}, tags = {} }
     when MakeBooking(now, s, none) as a expect any
-    then forall x in Booking: x.slots >= old(x.slots ?? 1)
+    then forall x in Booking: x.slots >= 1 and (x.note ?? "none") != ""
   }

@@ -132,7 +132,7 @@ function render(e: A.Expr): string {
     case "Keyword": return e.name;
     case "Old": return `old(${top(e.expr)})`;
     case "ListLit": return `[${list(e.items)}]`;
-    case "RecordLit": return `{ ${assigns(e.assigns)} }`;
+    case "RecordLit": return e.assigns.length ? `{ ${assigns(e.assigns)} }` : "{}";
     case "Literal": return e.type === "string" ? quote(e.value) : e.value;
   }
 }

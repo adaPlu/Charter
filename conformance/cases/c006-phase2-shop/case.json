@@ -5,9 +5,21 @@
     "A17"
   ],
   "expect": {
-    "parse": "ok"
+    "parse": "ok",
+    "check": {
+      "errors": [],
+      "proven": [
+        "p.stock - qty stays within the Int range"
+      ],
+      "runtime": 2,
+      "tests": {
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      }
+    }
   },
   "later": {
-    "M2": "check fails at the emit: Payment.charge needs amount > 0, and price * qty is only known to be >= 0. This is the defect Phase 5 later found and fixed with R-8."
+    "M4": "The emit has no capability signature yet, so the T-Sub obligation amount > 0 cannot be stated. When adapters declare signatures (milestone 4), check must fail here: price * qty is only known to be >= 0. This is the defect Phase 5 later fixed with R-8."
   }
 }

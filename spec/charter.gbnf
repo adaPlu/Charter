@@ -1,0 +1,93 @@
+# Generated from spec/charter.ebnf (sha256 40d73c423d94deea…) by scripts/export-gbnf.mjs.
+# Do not edit. Approximations: identifiers may be reserved words, and whitespace is required
+# after word-like tokens. See the comment at the top of scripts/export-gbnf.mjs.
+
+root ::= ws program
+
+program ::= module-decl ( import )* ( decl )*
+module-decl ::= "module" wsreq qname "@" ws version-tok wsreq
+import ::= "import" wsreq qname "@" ws verspec ( "as" wsreq ident-tok wsreq )?
+decl ::= requirement | uses | principal | type-decl | enum-decl | entity | fn-decl | extern-fn | permission | rule | event | trigger | invariant | assert | query | test | property | migration
+requirement ::= "requirement" wsreq req-id-tok wsreq status string-tok ws
+status ::= "confirmed" wsreq | "inferred" wsreq | "open" wsreq
+uses ::= "uses" wsreq capability ( "," ws capability )*
+capability ::= ident-tok wsreq "." ws ident-tok wsreq
+principal ::= "principal" wsreq ident-tok wsreq ( "by" wsreq ident-tok wsreq )?
+type-decl ::= "type" wsreq ident-tok wsreq "=" ws type ( links )?
+enum-decl ::= "enum" wsreq ident-tok wsreq "{" ws variant ( "," ws variant )* "}" ws ( links )?
+variant ::= ident-tok wsreq ( "(" ws field-list ")" ws )?
+entity ::= "entity" wsreq ident-tok wsreq "{" ws field-list "}" ws ( links )?
+field-list ::= field ( "," ws field )*
+field ::= ident-tok wsreq ":" ws type ( "=" ws expr )?
+type ::= base ( "?" ws )? ( "where" wsreq refinement )?
+base ::= "Bool" wsreq | "Int" wsreq | "Decimal" wsreq | "Money" wsreq | "Text" wsreq | "Time" wsreq | "Duration" wsreq | "Id" wsreq "<" ws qname ">" ws | "List" wsreq "<" ws type ">" ws | "Set" wsreq "<" ws type ">" ws | "Map" wsreq "<" ws type "," ws type ">" ws | "{" ws field-list "}" ws | qname
+refinement ::= cmp-op coalesce | expr
+fn-decl ::= "fn" wsreq ident-tok wsreq "(" ws ( params )? ")" ws ":" ws type "=" ws expr ( links )?
+extern-fn ::= "extern" wsreq "fn" wsreq ident-tok wsreq "(" ws ( params )? ")" ws ":" ws type
+params ::= param ( "," ws param )*
+param ::= ident-tok wsreq ":" ws type
+permission ::= "permission" wsreq ident-tok wsreq "(" ws ( params )? ")" ws "=" ws expr ( links )?
+rule ::= "rule" wsreq ident-tok wsreq "(" ws ( params )? ")" ws ( ":" ws type )? ( "rejects" wsreq ident-tok wsreq )? ( links )? permit ( clause )*
+permit ::= "permit" wsreq ( "anyone" wsreq | "system" wsreq | expr ) ( links )?
+clause ::= ( let-clause | guard-clause | set-clause | create-clause | delete-clause | for-clause | if-clause | emit-clause | raise-clause | return-clause ) ( links )?
+let-clause ::= "let" wsreq ident-tok wsreq "=" ws expr
+guard-clause ::= "guard" wsreq expr "else" wsreq "reject" wsreq ident-tok wsreq
+set-clause ::= "set" wsreq lvalue "=" ws expr
+create-clause ::= "create" wsreq ident-tok wsreq "{" ws ( assigns )? "}" ws ( "as" wsreq ident-tok wsreq )?
+delete-clause ::= "delete" wsreq expr
+for-clause ::= "for" wsreq ident-tok wsreq "in" wsreq postfix "{" ws ( clause )* "}" ws
+if-clause ::= "if" wsreq expr "{" ws ( clause )* "}" ws ( "else" wsreq "{" ws ( clause )* "}" ws )?
+emit-clause ::= "emit" wsreq capability "(" ws ( args )? ")" ws ( "confirm" wsreq "{" ws ( clause )* "}" ws )? ( "compensate" wsreq "{" ws ( clause )* "}" ws )?
+raise-clause ::= "raise" wsreq ident-tok wsreq "(" ws ( args )? ")" ws
+return-clause ::= "return" wsreq expr
+lvalue ::= ident-tok wsreq "." ws ident-tok wsreq ( "." ws ident-tok wsreq )*
+event ::= "event" wsreq ident-tok wsreq "(" ws ( params )? ")" ws
+trigger ::= "on" wsreq qname "(" ws ( ident-tok wsreq ( "," ws ident-tok wsreq )* )? ")" ws "do" wsreq ident-tok wsreq "(" ws ( args )? ")" ws ( "as" wsreq "system" wsreq )? ( links )?
+invariant ::= "invariant" wsreq ident-tok wsreq ":" ws expr ( links )?
+assert ::= "assert" wsreq ident-tok wsreq ":" ws ident-tok wsreq ( "permitted" wsreq | "succeeds" wsreq ) "implies" wsreq expr ( links )?
+query ::= "query" wsreq ident-tok wsreq "(" ws ( params )? ")" ws ":" ws type permit "=" ws expr ( links )?
+test ::= "test" wsreq string-tok ws "{" ws ( given )* act ( act )* "}" ws
+property ::= "property" wsreq string-tok ws "forall" wsreq params ( "where" wsreq expr )? "{" ws ( given )* act ( act )* "}" ws
+given ::= "given" wsreq ident-tok wsreq "=" ws "create" wsreq ident-tok wsreq "{" ws ( assigns )? "}" ws
+act ::= "when" wsreq ident-tok wsreq "(" ws ( args )? ")" ws ( "as" wsreq expr )? "expect" wsreq outcome ( "then" wsreq expr )*
+outcome ::= "ok" wsreq | "reject" wsreq ident-tok wsreq | "any" wsreq
+migration ::= "migration" wsreq version-tok wsreq "->" ws version-tok wsreq "{" ws ( mig-op )* "}" ws
+mig-op ::= "add" wsreq ident-tok wsreq "." ws ident-tok wsreq ":" ws type "=" ws expr | "rename" wsreq ident-tok wsreq "." ws ident-tok wsreq "to" wsreq ident-tok wsreq | "drop" wsreq ident-tok wsreq "." ws ident-tok wsreq
+links ::= "req" wsreq req-id-tok wsreq ( "," ws req-id-tok wsreq )*
+expr ::= if-expr | match-expr | or-expr
+if-expr ::= "if" wsreq expr "then" wsreq expr "else" wsreq expr
+match-expr ::= "match" wsreq expr "{" ws arm ( "," ws arm )* "}" ws
+arm ::= pattern "=>" ws expr
+pattern ::= "_" wsreq | ident-tok wsreq ( "(" ws binder ( "," ws binder )* ")" ws )?
+binder ::= ident-tok wsreq | "_" wsreq
+or-expr ::= and-expr ( "or" wsreq and-expr )*
+and-expr ::= not-expr ( "and" wsreq not-expr )*
+not-expr ::= "not" wsreq not-expr | quant-expr | cmp-expr
+quant-expr ::= ( "forall" wsreq | "exists" wsreq ) ident-tok wsreq "in" wsreq postfix ":" ws expr
+cmp-expr ::= coalesce ( cmp-op coalesce )?
+cmp-op ::= "==" ws | "!=" ws | "<" ws | "<=" ws | ">" ws | ">=" ws | "in" wsreq
+coalesce ::= add-expr ( "??" ws add-expr )*
+add-expr ::= mul-expr ( ( "+" ws | "-" ws ) mul-expr )*
+mul-expr ::= unary ( ( "*" ws | "/" ws | "%" ws ) unary )*
+unary ::= ( "-" ws )? postfix
+postfix ::= primary ( "." ws ident-tok wsreq | "(" ws ( args )? ")" ws | "[" ws expr "]" ws )*
+primary ::= literal | ident-tok wsreq | "caller" wsreq | "now" wsreq | "it" wsreq | "result" wsreq | "effects" wsreq | "accepted" wsreq | "old" wsreq "(" ws expr ")" ws | aggregate | "(" ws expr ")" ws | "[" ws ( args )? "]" ws | "{" ws ( assigns )? "}" ws
+aggregate ::= "count" wsreq ident-tok wsreq "in" wsreq postfix ( "where" wsreq expr )? | "sum" wsreq or-expr "for" wsreq ident-tok wsreq "in" wsreq postfix ( "where" wsreq expr )? | "select" wsreq or-expr "for" wsreq ident-tok wsreq "in" wsreq postfix ( "where" wsreq expr )? ( "order" wsreq "by" wsreq expr ( "," ws expr )* )?
+args ::= expr ( "," ws expr )*
+assigns ::= ident-tok wsreq "=" ws expr ( "," ws ident-tok wsreq "=" ws expr )*
+literal ::= int-tok wsreq | decimal-tok wsreq | string-tok ws | duration-tok wsreq | "true" wsreq | "false" wsreq | "none" wsreq
+qname ::= ident-tok wsreq ( "." ws ident-tok wsreq )*
+verspec ::= ( "^" ws | "~" ws )? ( version-tok wsreq | decimal-tok wsreq | int-tok wsreq )
+
+# tokens
+ident-tok ::= [a-zA-Z_\u00C0-\uFFFF] [a-zA-Z0-9_\u00C0-\uFFFF]*
+int-tok ::= [0-9]+
+decimal-tok ::= [0-9]+ "." [0-9]+
+string-tok ::= "\"" ( [^"\\\n] | "\\" [^\n] )* "\""
+duration-tok ::= [0-9]+ ( "ms" | "s" | "m" | "h" | "d" )
+req-id-tok ::= "R-" [0-9]+
+version-tok ::= [0-9]+ "." [0-9]+ "." [0-9]+
+
+# whitespace and // comments
+ws ::= ( [ \t\r\n] | "//" [^\n]* "\n" )*
+wsreq ::= ( [ \t\r\n] | "//" [^\n]* "\n" )+

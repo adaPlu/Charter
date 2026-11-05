@@ -31,17 +31,21 @@ jobs:
       - name: Conformance corpus parses as expected; amendments are covered
         run: node scripts/check-conformance.mjs
 
+      - name: GBNF export for constrained decoding is up to date
+        run: node scripts/export-gbnf.mjs --check
+
       - name: Type check
         run: pnpm exec tsc -p tsconfig.json
 
       - name: Tests (scripts, every package, conformance through the real toolchain)
         run: node --test --test-force-exit "scripts/*.test.mjs" "packages/*/test/*.test.ts"
 
-      - name: Milestone 1 demo
+      - name: Milestone 1 and 2 demos
         shell: bash
         run: |
           node packages/cli/src/main.ts check conformance/cases/c001-calculator/input.charter
           node packages/cli/src/main.ts test conformance/cases/c001-calculator/input.charter
+          node packages/cli/src/main.ts test conformance/cases/c004-shop-orders/input.charter
 
       - name: Package manifests match scripts/layers.mjs
         shell: bash

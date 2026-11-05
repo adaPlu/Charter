@@ -30,7 +30,7 @@ export function show(t: Ty): string {
     case "NumLit": return t.decimal ? "Decimal" : "Int";
     case "None": return "none";
     case "Enum": case "Entity": return t.name;
-    case "Record": return `{ ${t.fields.map(([n, f]) => `${n}: ${show(f)}`).join(", ")} }`;
+    case "Record": return t.fields.length ? `{ ${t.fields.map(([n, f]) => `${n}: ${show(f)}`).join(", ")} }` : "{}";
     case "List": return `List<${show(t.elem)}>`;
     case "Set": return `Set<${show(t.elem)}>`;
     case "Map": return `Map<${show(t.key)}, ${show(t.value)}>`;

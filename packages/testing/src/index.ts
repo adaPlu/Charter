@@ -5,8 +5,8 @@
 // derived from the property's name, so every run tries the same inputs. Bounds written as
 // "it >= c" and "it <= c" shape the generators; any other refinement filters their output.
 //
-// Milestone 1 scope: tests and properties that call queries. Tests with given setups, or that
-// call rules, are reported as skipped until the store exists (milestone 2).
+// Each test, and each run of a property, gets a fresh in-memory store. Given setups create
+// records directly; acts call rules and queries as the caller named by "as".
 import { createHash } from "node:crypto";
 import fc from "fast-check";
 import { printExpr, type Program, type Decl, type Expr, type Act } from "@charter/syntax";
@@ -34,17 +34,34 @@ function outcomeMatches(act: Act, o: Outcome): string | null {
   return `expected reject ${want.name}, got ${showOutcome(o)}`;
 }
 
-/** Runs one act. Returns an error message, or null if the act behaved as expected. */
+/**
+ * Runs one act: calls a rule or query as the given caller, then checks the outcome and every
+ * then clause. In then clauses, result, accepted and effects describe this act, and old(...)
+ * reads the state from just before it. Returns an error message, or null if all is as expected.
+ */
 function runAct(i: Interpreter, c: CheckResult, act: Act, env: Map<string, Value>): string | null {
   const args = act.args.map((a) => i.evalClosed(a, env));
-  const o = i.callQuery(act.call, args);
+  const caller = act.as ? i.evalClosed(act.as, env) : null;
+  const before = i.snapshot();
+  const isRule = c.resolution.decls.get(act.call)?.kind === "Rule";
+  const step = isRule ? i.callRule(act.call, args, { caller }) : { outcome: i.callQuery(act.call, args, { caller }), effects: [] as Value[] };
+  const o = step.outcome;
   const bad = outcomeMatches(act, o);
   if (bad) return bad;
   for (const t of act.thens) {
-    const v = i.evalClosed(t, env, o.kind === "ok" ? { result: o.value } : {});
-    if (!(v.t === "bool" && v.v)) return `then ${printExpr(t)} was false (result = ${o.kind === "ok" ? show(o.value) : "none"})`;
+    const extra = { before, accepted: o.kind === "ok", effects: step.effects, ...(o.kind === "ok" ? { result: o.value } : {}) };
+    const v = i.evalClosed(t, env, extra);
+    if (!(v.t === "bool" && v.v)) return `then ${printExpr(t)} was false (outcome: ${showOutcome(o)})`;
   }
   return null;
+}
+
+/** Creates the given records of a test, in order, and binds their names. */
+function runGivens(i: Interpreter, d: Extract<Decl, { kind: "TestDecl" | "PropertyDecl" }>, env: Map<string, Value>): void {
+  for (const g of d.givens) {
+    const assigns = g.assigns.map((a) => [a.name, i.evalClosed(a.value, env)] as [string, Value]);
+    env.set(g.name, i.createRecord(g.entity, assigns, env));
+  }
 }
 
 
@@ -103,25 +120,22 @@ function arbitraryFor(ty: Ty, preds: Pred[], c: CheckResult, i: Interpreter): fc
   return preds.length ? arb.filter((v) => { try { return i.satisfies(preds, v); } catch { return false; } }) : arb;
 }
 
-const needsStore = (d: Extract<Decl, { kind: "TestDecl" | "PropertyDecl" }>, c: CheckResult): string | null => {
-  if (d.givens.length) return "given setups need the store (milestone 2)";
-  const rule = d.acts.find((a) => c.resolution.decls.get(a.call)?.kind === "Rule");
-  return rule ? `${rule.call} is a rule, and rules run from milestone 2` : null;
-};
-
 export function runTests(p: Program, c: CheckResult, opts: RunOptions = {}): TestResult[] {
-  const i = interpreter(p, c, opts.now !== undefined ? { now: opts.now } : {});
+  // Every test, and every run of a property, starts from an empty store of its own.
+  const fresh = () => interpreter(p, c, opts.now !== undefined ? { now: opts.now } : {});
+  const i = fresh();
   const results: TestResult[] = [];
   for (const d of p.decls) {
     if (d.kind !== "TestDecl" && d.kind !== "PropertyDecl") continue;
     const kind = d.kind === "TestDecl" ? "test" : "property";
-    const skip = needsStore(d, c);
-    if (skip) { results.push({ name: d.name, kind, status: "skip", message: skip }); continue; }
 
     try {
       if (d.kind === "TestDecl") {
+        const t = fresh();
         const env = new Map<string, Value>();
-        const bad = d.acts.map((a) => runAct(i, c, a, env)).find((m) => m !== null) ?? null;
+        runGivens(t, d, env);
+        let bad: string | null = null;
+        for (const a of d.acts) { bad = runAct(t, c, a, env); if (bad) break; }
         results.push(bad ? { name: d.name, kind, status: "fail", message: bad } : { name: d.name, kind, status: "pass" });
         continue;
       }
@@ -131,15 +145,26 @@ export function runTests(p: Program, c: CheckResult, opts: RunOptions = {}): Tes
       if (missing) { results.push({ name: d.name, kind, status: "skip", message: `no generator yet for ${missing.name}` }); continue; }
       const numRuns = opts.numRuns ?? 1000;
       let lastFailure = "";
+      let notYet: string | null = null;
       const outcome = fc.check(fc.property(fc.tuple(...(arbs as fc.Arbitrary<Value>[])), (vals) => {
+        if (notYet) return true;
+        const run = fresh();
         const env = new Map(params.map((prm, k) => [prm.name, vals[k]!] as [string, Value]));
-        if (d.where) { const w = i.evalClosed(d.where, env); fc.pre(w.t === "bool" && w.v); }
-        for (const a of d.acts) {
-          const bad = runAct(i, c, a, env);
-          if (bad) { lastFailure = bad; return false; }
+        try {
+          if (d.where) { const w = run.evalClosed(d.where, env); fc.pre(w.t === "bool" && w.v); }
+          runGivens(run, d, env);
+          for (const a of d.acts) {
+            const bad = runAct(run, c, a, env);
+            if (bad) { lastFailure = bad; return false; }
+          }
+        } catch (err) {
+          // A feature from a later milestone is a skip, not a failing input.
+          if (err instanceof NotYet) { notYet = err.message; return true; }
+          throw err;
         }
         return true;
       }), { seed: seedOf(d.name), numRuns });
+      if (notYet) { results.push({ name: d.name, kind, status: "skip", message: notYet }); continue; }
       if (outcome.failed) {
         const ce = outcome.counterexample?.[0] as Value[] | undefined;
         const inputs = ce ? params.map((prm, k) => `${prm.name} = ${show(ce[k]!)}`).join(", ") : "";

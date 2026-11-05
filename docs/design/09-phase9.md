@@ -148,7 +148,7 @@ Whether these five ideas improve AI software development is exactly what Phase 7
 |---|---|
 | Design across nine phases | Complete |
 | Language amendments | A1 to A13 from the design, plus A14 to A20 from milestone 0. The frozen grammar has 74 syntactic rules (83 productions with lexical rules). |
-| Code | Milestones 0 and 1: the toolchain checks, proves, runs and tests the pure part of Charter. Everything involving rules, entities and the store is still derived by hand. |
+| Code | Milestones 0 to 2: the toolchain checks, proves, runs, serves and replays Charter programs, rules and state included. Effects are queued but not dispatched. Invariant and assert proofs are still derived by hand. |
 | First real evidence | Milestone 1, when the real solver proves the calculator's division safe |
 | First go/no-go decision | The H1 pilot, about four months into the build |
 | Biggest bets | H1, that models generate Charter more reliably than TypeScript, and H2, that edits stay local at scale |

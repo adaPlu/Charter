@@ -17,6 +17,7 @@ const casesDir = join(root, "conformance", "cases");
 
 interface CheckExpect {
   errors: { code: string; line?: number; witness?: Record<string, string> }[];
+  warnings?: string[];
   proven?: string[];
   runtime?: number;
   tests?: { pass: number; fail: number; skip: number };
@@ -41,6 +42,7 @@ for (const c of cases) {
     const proofs = await prove(checked.obligations);
     const errors = [...checked.diagnostics.filter((d) => d.severity === "error"), ...proofDiagnostics(proofs)];
     assert.deepEqual(errors.map((d) => d.code), exp.errors.map((e) => e.code), errors.map((d) => d.message).join("; "));
+    if (exp.warnings) assert.deepEqual(checked.diagnostics.filter((d) => d.severity === "warning").map((d) => d.code), exp.warnings);
     exp.errors.forEach((e, i) => {
       if (e.line !== undefined) assert.equal(errors[i]!.span.line, e.line);
       if (e.witness) assert.deepEqual(errors[i]!.witness, e.witness);

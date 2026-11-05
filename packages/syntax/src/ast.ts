@@ -98,7 +98,7 @@ export type Expr =
   | { kind: "Call"; callee: Expr; args: Expr[]; span: Span }
   | { kind: "Index"; object: Expr; index: Expr; span: Span }
   | { kind: "Name"; name: string; span: Span }
-  | { kind: "Keyword"; name: "caller" | "now" | "it" | "result" | "effects"; span: Span }
+  | { kind: "Keyword"; name: "caller" | "now" | "it" | "result" | "effects" | "accepted"; span: Span }
   | { kind: "Old"; expr: Expr; span: Span }
   | { kind: "ListLit"; items: Expr[]; span: Span }
   | { kind: "RecordLit"; assigns: Assign[]; span: Span }

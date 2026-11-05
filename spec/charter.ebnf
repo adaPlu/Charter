@@ -1,7 +1,8 @@
 (* Charter grammar, version 0.1 (frozen baseline from milestone 0)
 
-   Merges the Phase 2 grammar with amendments A2, A8, A9, A11, A12 and the milestone 0
-   clarifications A14 to A20 (see spec/amendments.md). Changing this file changes its hash,
+   Merges the Phase 2 grammar with amendments A2, A8, A9, A11, A12, the milestone 0
+   clarifications A14 to A20, and the milestone 2 decisions A22 and A23 (see spec/amendments.md).
+   Frozen for the H1 pilot at the end of milestone 2. Changing this file changes its hash,
    and scripts/check-grammar.mjs then fails until the lock is renewed with an amendment entry.
 
    Notation (ISO 14977 subset, juxtaposition for sequence):
@@ -129,11 +130,12 @@ mul_expr     = unary { ( "*" | "/" | "%" ) unary } ;
 unary        = [ "-" ] postfix ;
 postfix      = primary { "." ident | "(" [ args ] ")" | "[" expr "]" } ;
 primary      = literal | ident | "caller" | "now" | "it" | "result" | "effects"   (* "effects": A12 *)
+             | "accepted"                                              (* A23 *)
              | "old" "(" expr ")"
              | aggregate                                               (* A18 *)
              | "(" expr ")"
              | "[" [ args ] "]"
-             | "{" assigns "}" ;
+             | "{" [ assigns ] "}" ;                                    (* empty {}: A22 *)
 aggregate    = "count" ident "in" postfix [ "where" expr ]
              | "sum" or_expr "for" ident "in" postfix [ "where" expr ]
              | "select" or_expr "for" ident "in" postfix [ "where" expr ]   (* A8 *)

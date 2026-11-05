@@ -21,6 +21,10 @@
     { "id": "A18", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "not applies to quantifiers; aggregates are primaries; longest match" },
     { "id": "A19", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "Wildcard binders in patterns" },
     { "id": "A20", "phase": 8, "kind": "grammar",   "dueMilestone": 0, "title": "Lexical rules written down" },
-    { "id": "A21", "phase": 8, "kind": "semantics", "dueMilestone": 1, "title": "Integer literals take their type from where they are used" }
+    { "id": "A21", "phase": 8, "kind": "semantics", "dueMilestone": 1, "title": "Integer literals take their type from where they are used" },
+    { "id": "A22", "phase": 8, "kind": "grammar",   "dueMilestone": 2, "title": "Empty literal {} typed by context" },
+    { "id": "A23", "phase": 8, "kind": "grammar",   "dueMilestone": 2, "title": "accepted: whether a test act's outcome was ok" },
+    { "id": "A24", "phase": 8, "kind": "semantics", "dueMilestone": 2, "title": "Writes through a narrowed optional entity are allowed" },
+    { "id": "A25", "phase": 8, "kind": "semantics", "dueMilestone": 2, "title": "Queries returning a whole entity get a warning" }
   ]
 }

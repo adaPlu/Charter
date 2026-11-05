@@ -12,9 +12,9 @@ This document collects the nine design phases in one place. It was produced from
 |---|---|
 | Design, Phases 1 to 9 | Complete |
 | Milestone 0: repository, layer rule, frozen grammar | Done |
-| Milestone 1: calculator end to end | Done. Parser, checker, Z3 proofs, interpreter and tests run for the pure part of the language. |
-| Rules, entities and the store | Not built yet. Milestone 2 is next. |
-| Evidence for the hypotheses | None yet. The first comes from the H1 pilot, after milestone 2. |
+| Milestone 1: calculator end to end | Done. Parser, checker, Z3 proofs, interpreter and tests for the pure part of the language. |
+| Milestone 2: state and pilot readiness | Done, except the pilot run itself. Rules run as transactions on SQLite; the grammar is frozen for the pilot. |
+| Evidence for the hypotheses | None yet. The H1 pilot is ready to build, and needs decisions about models, budget and task authors. |
 
 **Every program, IR listing, report and verification result in Phases 1 to 9 was written or derived by hand.** Milestone 1 has since checked some of them with real tools; the Errata section says where they held and where they did not. Code blocks carry status labels:
 
@@ -28,7 +28,7 @@ This document collects the nine design phases in one place. It was produced from
 ## How to read this document
 
 - **The phases are kept as written.** Later phases amend earlier ones, and those amendments are listed rather than silently applied. Phase 2's grammar, for example, appears as it was designed. The normative version is `spec/charter.ebnf` in the repository.
-- **The Errata section** lists what implementation found. Milestone 0 added grammar amendments A14 to A20. Milestone 1 added A21 and found one hand-derived proof in Phase 5 that does not hold.
+- **The Errata section** lists what implementation found. Milestone 0 added grammar amendments A14 to A20. Milestone 1 added A21 and found one hand-derived proof in Phase 5 that does not hold. Milestone 2 added A22 to A25, froze the grammar, and found that capabilities need signatures.
 - **The checkpoints** at the end of each phase record decisions, open questions and risks. Phase 8, section 8.6 assigns every open question to a milestone.
 
 ## Contents
@@ -128,6 +128,7 @@ This document collects the nine design phases in one place. It was produced from
   - [9.6 Where the whole design stands](#96-where-the-whole-design-stands)
   - [Final checkpoint](#final-checkpoint)
 - [Errata and implementation findings](#errata-and-implementation-findings)
+  - [Milestone 2: state, and readiness for the pilot](#milestone-2-state-and-readiness-for-the-pilot)
   - [Milestone 1: the calculator end to end](#milestone-1-the-calculator-end-to-end)
   - [Milestone 0: grammar and corpus](#milestone-0-grammar-and-corpus)
 - [Appendix: the master prompt](#appendix-the-master-prompt)
@@ -2916,7 +2917,7 @@ The language-only condition is primary. The tooling condition is the more practi
 
 # Phase 8: MVP implementation plan
 
-This is a plan. Effort figures are rough estimates for a small team, meant for planning and sequencing, not commitments. Milestones 0 and 1 have since been completed; the repository README records what they delivered, and the Errata section records what they found.
+This is a plan. Effort figures are rough estimates for a small team, meant for planning and sequencing, not commitments. Milestones 0, 1 and 2 have since been completed (the H1 pilot itself has not run); the repository README records what they delivered, and the Errata section records what they found.
 
 ## 8.0 Ground rules for the build
 
@@ -3311,7 +3312,7 @@ Whether these five ideas improve AI software development is exactly what Phase 7
 |---|---|
 | Design across nine phases | Complete |
 | Language amendments | A1 to A13 from the design, plus A14 to A20 from milestone 0. The frozen grammar has 74 syntactic rules (83 productions with lexical rules). |
-| Code | Milestones 0 and 1: the toolchain checks, proves, runs and tests the pure part of Charter. Everything involving rules, entities and the store is still derived by hand. |
+| Code | Milestones 0 to 2: the toolchain checks, proves, runs, serves and replays Charter programs, rules and state included. Effects are queued but not dispatched. Invariant and assert proofs are still derived by hand. |
 | First real evidence | Milestone 1, when the real solver proves the calculator's division safe |
 | First go/no-go decision | The H1 pilot, about four months into the build |
 | Biggest bets | H1, that models generate Charter more reliably than TypeScript, and H2, that edits stay local at scale |
@@ -3333,6 +3334,22 @@ Whether these five ideas improve AI software development is exactly what Phase 7
 # Errata and implementation findings
 
 This section records where building Charter showed the design to be wrong or incomplete. The phases above are kept as written.
+
+## Milestone 2: state, and readiness for the pilot
+
+Milestone 2 built the SQLite store, rules as serializable transactions, permissions, invariants and referential integrity checked at every commit, events and triggers, the step log and replay, tests with setups and callers, `charter serve`, `charter replay`, and the GBNF export. It also settled the open grammar questions (A22 to A25) and froze the grammar for the pilot. These are its findings.
+
+| Finding | Detail | Resolution |
+|---|---|---|
+| **Capabilities have no signatures** | Phase 5, example 4 relies on `Payment.charge` requiring `amount > 0`, written in a comment. The language has no way to declare that, so the checker cannot state the obligation that found the zero-charge defect. | Capability signatures must become part of the language with the effect runtime in milestone 4. Recorded in case `c006`. |
+| **A soundness bug, caught before it shipped** | The first version checked `confirm` and `compensate` blocks with the step's own knowledge, and "proved" `p.stock + qty` cannot overflow inside a compensation. A compensation runs later, against the stock at that time (design doc, 2.8). | Those blocks are now checked with only what is captured: parameter refinements (A3) and fresh reads of stored fields. A regression test covers it. |
+| **Field refinements are facts** | Proving `levelFor(pl.xp)` in example 5 needs `xp >= 0` (an entity field) and `Award.xp >= 0` (a record field). Invariants hold at the start of every step, so they are facts about stored values. After a write, a read means the written value; another binding of the same entity type becomes unknown, because it might be the same entity. | Implemented, with tests for each case. Example 5's call is now proven. |
+| **Value ranges are facts** | Every `Int` is within ±(2⁵³ − 1) and every `Decimal` within ±10³⁸, because anything else faults (A4, A13). | The verifier assumes these bounds. `p.stock - qty` in example 4 is now proven; `p.stock + qty` in the compensation honestly is not. |
+| **The invariant contained a broken guard** | With example 4's stock guard weakened, a large order would drive stock below zero. `StockNonNegative`, checked at commit, rejected the step and nothing changed. | Kept as a test: the runtime check does its job when a guard is wrong. |
+| **Ids from imported modules** | Example 3's tests write `account = "a1"` for an `Id<idn.Account>`. No module can build such an id until modules are linked. | Text is accepted for ids of imported modules for now. |
+| **The GBNF export approximates** | GBNF cannot exclude reserved words from identifiers, and cannot look ahead, so whitespace is required after every word-like token. | Documented in `scripts/export-gbnf.mjs`. The forced spacing (`caller .id`) is less natural for a model, a fairness question for H1 that the pilot report must state. |
+| **Implementation choices** | The store uses Node's built-in `node:sqlite` instead of `better-sqlite3`: the same synchronous API with no native build. Records sit in one generic table; per-entity tables arrive with code generation. A whole step, reads included, runs inside `BEGIN IMMEDIATE`, so steps stay serializable across processes. | No effect on the semantics. |
+| **Not done in milestone 2** | Effects are queued in the outbox but not dispatched, so `confirm` and `compensate` do not run yet (milestone 4). The JSON Schema for graph operations waits for the operations themselves (milestone 6). **The H1 pilot has not run.** | The pilot needs model access, a budget, and task authors independent of the design (Phase 7, 7.1). Those are decisions for a person. |
 
 ## Milestone 1: the calculator end to end
 

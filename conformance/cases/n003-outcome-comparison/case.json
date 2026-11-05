@@ -1,7 +1,0 @@
-{
-  "title": "Comparing result with an outcome does not parse yet",
-  "source": "Design doc, Phase 5, example 3, and the open question in section 8.6",
-  "covers": [],
-  "expect": { "parse": { "error": { "line": 14 } } },
-  "later": { "M2": "Settle outcome-valued result before the grammar freeze for the pilot." }
-}

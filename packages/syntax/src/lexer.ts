@@ -10,7 +10,7 @@ export interface Token { kind: TokenKind; text: string; span: Span }
 /** Every alphabetic terminal of the grammar. A test checks this against spec/grammar.lock.json. */
 export const RESERVED: ReadonlySet<string> = new Set([
   "Bool", "Decimal", "Duration", "Id", "Int", "List", "Map", "Money", "Set", "Text", "Time", "_",
-  "add", "and", "any", "anyone", "as", "assert", "by", "caller", "compensate", "confirm", "confirmed",
+  "accepted", "add", "and", "any", "anyone", "as", "assert", "by", "caller", "compensate", "confirm", "confirmed",
   "count", "create", "delete", "do", "drop", "effects", "else", "emit", "entity", "enum", "event",
   "exists", "expect", "extern", "false", "fn", "for", "forall", "given", "guard", "if", "implies",
   "import", "in", "inferred", "invariant", "it", "let", "match", "migration", "module", "none", "not",

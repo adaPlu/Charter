@@ -9,12 +9,20 @@ The full design, all nine phases, is in [docs/charter-design.md](docs/charter-de
 | Milestone | State |
 |---|---|
 | 0. Foundations | Done. Repository, layer rule, frozen grammar, conformance corpus, CI. |
-| **1. Calculator end to end** | **Done.** Parser, printer, hashes, name resolution, type checker, Z3 proofs, interpreter, tests and the `charter` command. |
-| 2. State, and readiness for the H1 pilot | Next: entities, rules, transactions, the SQLite store, `charter serve` |
-| Gate: H1 pilot | Planned. Can stop the project if Charter shows no advantage. |
+| 1. Calculator end to end | Done. Parser, printer, hashes, name resolution, type checker, Z3 proofs, interpreter, tests. |
+| **2. State, and readiness for the H1 pilot** | **Done, except the pilot run.** Rules as transactions on SQLite, invariants at every commit, step log and replay, `charter serve`, the grammar frozen and exported for constrained decoding. |
+| Gate: H1 pilot | **Waiting on decisions** (below). Can stop the project if Charter shows no advantage. |
 | 3 to 9 | Planned. See the design doc, section 8.5. |
 
-Milestone 1 fully checks, proves and runs the pure part of the language. That covers types, enums, functions, queries, and tests and properties that call queries. Rules, entities, permissions and invariants are parsed and resolved, and `charter check` lists them as checked from milestone 2. It never accepts them silently.
+What runs now: types, functions, queries, entities, rules, permissions, invariants, events and triggers, and tests and properties with setups and callers. Effects are queued in the outbox but not yet dispatched (milestone 4). Invariants are checked at every commit; proving them arrives in milestone 3.
+
+### What the H1 pilot needs
+
+The pilot (design doc, 7.3) compares how often models write valid Charter against valid TypeScript, both under constrained decoding. The tooling is ready: the frozen grammar exported as [spec/charter.gbnf](spec/charter.gbnf), and a checker whose error codes a repair loop can read. Running it needs three decisions:
+
+1. **Model access.** Two pinned models, with API keys or a local model server.
+2. **A budget.** 20 tasks × 2 models × 2 arms × 3 samples, plus repair rounds.
+3. **Task authors.** Phase 7 requires tasks and hidden tests written independently of the design. Tasks written by the same process that designed Charter would bias the result.
 
 ## Try it
 
@@ -65,11 +73,35 @@ npm run charter -- check conformance/cases/n005-division-unproven/input.charter
     fix (add_guard): check the divisor first, for example: if b == 0 then … else …
 ```
 
+The to-do app from Phase 5, example 2 runs as a web service. Register two users from the command line, then serve the same database:
+
+```bash
+npm run charter -- run examples/todo/todo.charter Register '"Ana"' --system --db todo.db
+```
+
+```bash
+npm run charter -- serve examples/todo/todo.charter --db todo.db --port 8080
+```
+
+```bash
+curl -s -X POST localhost:8080/rules/AddTask -H "x-charter-caller: <Ana's id>" -d '{"args": ["Buy milk", null]}'
+```
+
+Every step, rejections included, goes into the step log. Replaying it on an empty store must reproduce every outcome and the exact state:
+
+```bash
+npm run charter -- replay examples/todo/todo.charter --db todo.db
+```
+
+The caller header is for development only. Real sign-in belongs to the identity module.
+
 | Command | What it does |
 |---|---|
 | `charter check <file>` | Parse, check names and types, prove obligations with Z3 |
-| `charter test <file> [--runs N]` | Run tests and properties on the reference interpreter |
-| `charter run <file> <Query> [args]` | Call a query. Each argument is a Charter expression. |
+| `charter test <file> [--runs N]` | Run tests and properties, each on a fresh in-memory store |
+| `charter run <file> <Name> [args] [--db F] [--as ID] [--system]` | Call a rule or query. Each argument is a Charter expression. |
+| `charter serve <file> [--db F] [--port N]` | Every rule and query over HTTP |
+| `charter replay <file> --db F` | Re-run the step log on an empty store and compare the state hash |
 | `charter fmt <file> [--check \| --write]` | Canonical form. `--write` refuses to delete comments unless you add `--force`. |
 | `charter ask "<request>"` | Natural-language interface, planned for milestone 7. The only command that needs a model. |
 
@@ -79,14 +111,14 @@ npm run charter -- check conformance/cases/n005-division-unproven/input.charter
 npm run ci
 ```
 
-That runs the layer rule, the grammar freeze, the conformance corpus, the TypeScript type check and every test. CI runs the same steps on Linux and Windows.
+That runs the layer rule, the grammar freeze, the conformance corpus, the GBNF export check, the TypeScript type check and every test. CI runs the same steps on Linux and Windows.
 
 | Item | Value |
 |---|---|
-| Grammar productions | 83, of which 74 are syntactic, all exercised by the corpus |
-| Conformance cases | 15 |
-| Tests | 62, including about 1,900 fuzzed programs and expressions per run |
-| Amendments | A1 to A21. The 16 due by milestone 1 are covered by conformance cases. |
+| Grammar productions | 83, of which 74 are syntactic, all exercised by the corpus. Frozen for the pilot. |
+| Conformance cases | 16 |
+| Tests | 92, including about 1,900 fuzzed programs and expressions per run, and the to-do app tested over HTTP |
+| Amendments | A1 to A25. The 21 due by milestone 2 are covered by conformance cases. |
 
 ## What milestone 1 delivered
 
@@ -103,7 +135,9 @@ That runs the layer rule, the grammar freeze, the conformance corpus, the TypeSc
 | Path | Contents |
 |---|---|
 | `spec/` | Grammar, grammar lock, amendments, pointers to the semantics |
-| `packages/` | The 17 toolchain packages. syntax, graph, resolve, types, verify, interp, testing and cli have code. The rest are empty until their milestone. |
+| `packages/` | The 17 toolchain packages. syntax, graph, resolve, types, verify, store, interp, testing and cli have code. The rest are empty until their milestone. |
+| `examples/` | Runnable programs, such as the to-do app for `charter serve` |
+| `spec/charter.gbnf` | The grammar for constrained decoders, generated from `spec/charter.ebnf` |
 | `conformance/cases/` | Programs with their expected parse, check, proof and test results |
 | `scripts/` | Layer rule, grammar tools, corpus checker, generators |
 | `docs/design/` | The design document, one file per phase |
@@ -118,5 +152,5 @@ The grammar is frozen, so a change takes three steps:
 3. Renew the lock with the amendment's id:
 
 ```bash
-node scripts/check-grammar.mjs --write-lock A22
+node scripts/check-grammar.mjs --write-lock A26
 ```

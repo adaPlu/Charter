@@ -48,13 +48,37 @@ test "rejects zero" { when Q(0) expect ok }
 test "doubles" { when Q(2) expect ok then result == 4 }`);
   const rs = runTests(p, c);
   assert.match(rs[0]!.message!, /expected ok, got Rejected {2}ValidationError\(x\)/);
-  assert.match(rs[1]!.message!, /then result == 4 was false \(result = 2\)/);
+  assert.match(rs[1]!.message!, /then result == 4 was false \(outcome: Ok {2}2\)/);
 });
 
-test("tests that need the store are skipped, not silently passed", () => {
+test("tests with setups and rules run on a fresh store each time (Phase 5, example 4)", () => {
   const { p, c } = load(readFileSync(join(root, "conformance", "cases", "c004-shop-orders", "input.charter"), "utf8"));
-  const rs = runTests(p, c);
-  assert.ok(rs.length > 0 && rs.every((r) => r.status === "skip"));
+  const rs = runTests(p, c, { numRuns: 100 });
+  assert.deepEqual(rs.map((r) => [r.name, r.status]), [
+    ["two orders for the last unit: one wins, one is rejected and not charged", "pass"],
+    ["stock never goes negative across order sequences", "pass"],
+  ]);
+});
+
+const shopSrc = () => readFileSync(join(root, "conformance", "cases", "c004-shop-orders", "input.charter"), "utf8");
+const propertyStatus = (src: string) => {
+  const { p, c } = load(src);
+  return runTests(p, c, { numRuns: 200 }).find((x) => x.kind === "property")!;
+};
+
+test("a broken guard is contained by the invariant checked at commit", () => {
+  // Without the stock guard, a large order would drive stock below zero. StockNonNegative
+  // rejects that step at commit, nothing changes, and the property still holds.
+  const r = propertyStatus(shopSrc().replace("guard p.stock >= qty else reject OutOfStock", "guard p.stock >= 0 else reject OutOfStock"));
+  assert.equal(r.status, "pass");
+});
+
+test("a property about rules finds a counterexample when the rule is wrong", () => {
+  // Without the decrement, orders are created but stock never moves. No invariant notices,
+  // but the property's stock equation does.
+  const r = propertyStatus(shopSrc().replace("  set p.stock = p.stock - qty                                                      req R-1\n", ""));
+  assert.equal(r.status, "fail");
+  assert.match(r.message!, /then p\.stock >= 0 and p\.stock == 12 - sum o\.qty for o in Order where o\.product == p\.id was false/);
 });
 
 test("runs are deterministic", () => {

@@ -1,0 +1,9 @@
+{
+  "title": "A query returning a whole entity gets a warning",
+  "source": "Design doc, amendment A25 (milestone 2)",
+  "covers": ["A25"],
+  "expect": {
+    "parse": "ok",
+    "check": { "errors": [], "warnings": ["CH0230"], "tests": { "pass": 1, "fail": 0, "skip": 0 } }
+  }
+}

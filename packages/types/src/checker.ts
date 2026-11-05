@@ -9,7 +9,7 @@
 //   nonzero     divisors (T-Div), a compile error unless proven
 //   refinement  arguments and return values against refined types (T-Sub), an error unless proven
 //   range       Int and Decimal results stay in range (A4, A13), a runtime check unless proven
-import { CODES, printExpr, type Decl, type Diagnostic, type Expr, type Program, type Span, type TypeExpr, type Act } from "@charter/syntax";
+import { CODES, printExpr, type Decl, type Diagnostic, type Expr, type Program, type Span, type TypeExpr, type Act, type Clause } from "@charter/syntax";
 import { resolve, BUILTIN_OUTCOMES, type Resolution } from "@charter/resolve";
 import { declKey } from "@charter/graph";
 import { T, show, same, isNumeric, type Ty, type Pred, type Refined, type Term, type Sort, type Obligation } from "./types.ts";
@@ -37,9 +37,22 @@ interface Env {
   itTy?: Ty;
   itTerm?: Term;
   resultTy?: Ty;
+  /** The principal entity, if the module declares one. */
+  callerTy?: Ty;
+  /** True inside a test's then clauses, where result, accepted, effects and old(...) mean something. */
+  inThen?: boolean;
+  /**
+   * What a field read like "p.stock" means after the step wrote it. Before any write, a read
+   * is an opaque term for the stored value, about which the field's refinement is a fact.
+   */
+  fieldTerms?: Map<string, Term>;
   /** False inside tests and properties, where checks happen at runtime instead. */
   obligations: boolean;
 }
+
+let freshCounter = 0;
+/** A term nothing is known about, for a value that may have changed in ways we did not track. */
+const fresh = (key: string, sort: Sort): Term => ({ t: "opaque", key: `${key}@${++freshCounter}`, sort });
 
 const sortOf = (t: Ty | undefined): Sort | null =>
   !t ? null : t.k === "Int" || (t.k === "NumLit" && !t.decimal) ? "Int"
@@ -63,6 +76,8 @@ export function check(p: Program): CheckResult {
   // ---------------------------------------------------------------- types
 
   const resolving = new Set<string>();
+  /** Refinements of record fields, kept beside the record type (types compare by structure). */
+  const recordPreds = new WeakMap<Ty, Map<string, Refined>>();
   const resolveType = (te: TypeExpr): Refined => {
     let r: Refined;
     const b = te.base;
@@ -72,7 +87,14 @@ export function check(p: Program): CheckResult {
       case "List": r = { ty: { k: "List", elem: resolveType(b.elem).ty }, preds: [] }; break;
       case "SetT": r = { ty: { k: "Set", elem: resolveType(b.elem).ty }, preds: [] }; break;
       case "MapT": r = { ty: { k: "Map", key: resolveType(b.key).ty, value: resolveType(b.value).ty }, preds: [] }; break;
-      case "RecordT": r = { ty: { k: "Record", fields: b.fields.map((f) => [f.name, resolveType(f.type).ty] as [string, Ty]) }, preds: [] }; break;
+      case "RecordT": {
+        const fields = b.fields.map((f) => ({ name: f.name, r: resolveType(f.type) }));
+        const ty: Ty = { k: "Record", fields: fields.map((f) => [f.name, f.r.ty] as [string, Ty]) };
+        const withPreds = fields.filter((f) => f.r.preds.length);
+        if (withPreds.length) recordPreds.set(ty, new Map(withPreds.map((f) => [f.name, f.r])));
+        r = { ty, preds: [] };
+        break;
+      }
       case "Named": {
         const name = b.name.parts.join(".");
         const d = b.name.parts.length === 1 ? decls.get(name) : undefined;
@@ -110,6 +132,11 @@ export function check(p: Program): CheckResult {
     if (to.k === "Optional") return from.k === "Optional" ? assignable(from.inner, to.inner) : assignable(from, to.inner);
     if (from.k === "List" && to.k === "List") return assignable(from.elem, to.elem);
     if (from.k === "Set" && to.k === "Set") return assignable(from.elem, to.elem);
+    // An id from an imported module (Id<idn.Account>) cannot be built until modules are linked,
+    // so for now its values are written as Text. Milestone 2 decision; see the errata.
+    if (to.k === "Id" && to.target.includes(".") && from.k === "Text") return true;
+    // {} is an empty Set, Map or record, depending on where it is used (A22).
+    if (from.k === "Record" && from.fields.length === 0 && (to.k === "Set" || to.k === "Map" || to.k === "List")) return true;
     if (from.k === "Record" && to.k === "Record") {
       return from.fields.length === to.fields.length && to.fields.every(([n, t]) => {
         const f = from.fields.find(([m]) => m === n);
@@ -179,6 +206,11 @@ export function check(p: Program): CheckResult {
         }
         return opaque();
       }
+      case "FieldAccess": {
+        // After the step wrote this field, a read means the written value.
+        const known = env.fieldTerms?.get(printExpr(e));
+        return known ?? opaque();
+      }
       default: return opaque();
     }
   };
@@ -190,13 +222,59 @@ export function check(p: Program): CheckResult {
     return t;
   };
 
+  /** Adds what a condition tells us: a fact for the solver, and none-narrowing (amendment A24). */
   const withFact = (env: Env, e: Expr, negate: boolean): Env => {
+    let out = env;
+    const narrowed = narrowing(e, negate, env);
+    if (narrowed) {
+      out = { ...out, vars: new Map(out.vars).set(narrowed.name, narrowed.v), facts: [...out.facts] };
+      bindFacts(out, narrowed.name, narrowed.v.ty);
+    }
     const t = termOf(e, env);
-    if (!t) return env;
+    if (!t) return out;
     return {
-      ...env,
-      facts: [...env.facts, { term: negate ? app("not", [t], "Bool") : t, text: negate ? `not (${printExpr(e)})` : printExpr(e) }],
+      ...out,
+      facts: [...out.facts, { term: negate ? app("not", [t], "Bool") : t, text: negate ? `not (${printExpr(e)})` : printExpr(e) }],
     };
+  };
+
+  /** "x != none" (or "not (x == none)") narrows x from T? to T where the condition holds. */
+  const narrowing = (e: Expr, negate: boolean, env: Env): { name: string; v: Var } | null => {
+    if (e.kind === "Binary" && (e.op === "!=" || e.op === "==")) {
+      const [x, other] = e.left.kind === "Name" ? [e.left, e.right] : [e.right, e.left];
+      if (x.kind !== "Name" || other.kind !== "Literal" || other.type !== "none") return null;
+      const positive = (e.op === "!=") !== negate;
+      const v = env.vars.get(x.name);
+      if (!positive || !v || v.ty.k !== "Optional") return null;
+      return { name: x.name, v: { ty: v.ty.inner } };
+    }
+    if (e.kind === "Binary" && e.op === "and" && !negate) return narrowing(e.left, false, env) ?? narrowing(e.right, false, env);
+    return null;
+  };
+
+  /**
+   * When a variable of an entity or record type is bound, the refinements of its fields are
+   * facts about the stored values: invariants hold at the start of every step (design doc,
+   * 2.8). Adds those facts to env.facts.
+   */
+  const bindFacts = (env: Env, name: string, ty: Ty): void => {
+    const fields: [string, Refined][] = [];
+    if (ty.k === "Entity") {
+      const d = decls.get(ty.name);
+      if (d && d.kind === "Entity") for (const f of d.fields) { const r = resolveType(f.type); if (r.preds.length) fields.push([f.name, r]); }
+    }
+    if (ty.k === "Record") fields.push(...(recordPreds.get(ty) ?? []));
+    for (const [fname, r] of fields) {
+      const sort = sortOf(r.ty);
+      if (!sort) continue;
+      const term: Term = { t: "opaque", key: `${name}.${fname}`, sort };
+      for (const pr of r.preds) {
+        const penv: Env = { ...env, itTy: r.ty, itTerm: term, obligations: false };
+        infer(pr.expr, penv, T.Bool);
+        const t = termOf(pr.expr, penv);
+        if (t) env.facts.push({ term: t, text: pr.source.replace(/\bit\b/g, `${name}.${fname}`) });
+      }
+    }
   };
 
   const oblige = (o: Omit<Obligation, "facts" | "factText" | "decl">, env: Env) => {
@@ -281,10 +359,17 @@ export function check(p: Program): CheckResult {
         switch (e.name) {
           case "it": return env.itTy ?? fail(e, `"it" is only meaningful inside a refinement`);
           case "now": return T.Time;
-          case "result": return env.resultTy ?? fail(e, `"result" is only meaningful in a test's then clause`);
-          default: return T.Unknown; // caller and effects: milestone 2
+          case "result": return env.inThen ? env.resultTy ?? T.None : fail(e, `"result" is only meaningful in a test's then clause`);
+          case "accepted": return env.inThen ? T.Bool : fail(e, `"accepted" is only meaningful in a test's then clause`);
+          case "effects":
+            return env.inThen ? { k: "List", elem: { k: "Record", fields: [["cap", T.Text], ["args", { k: "List", elem: T.Unknown }]] } }
+              : fail(e, `"effects" is only meaningful in a test's then clause`);
+          case "caller": return env.callerTy ?? fail(e, `"caller" needs a principal declaration, such as "principal User"`);
         }
-      case "Old": return infer(e.expr, env, expected);
+        return T.Unknown;
+      case "Old":
+        if (!env.inThen) return fail(e, `old(...) is only meaningful in a test's then clause`);
+        return infer(e.expr, env, expected);
       case "IfExpr": {
         expectTy(e.cond, env, T.Bool, "an if condition");
         const a = infer(e.then, withFact(env, e.cond, false), expected);
@@ -371,7 +456,9 @@ export function check(p: Program): CheckResult {
         }
         return { k: "List", elem };
       }
-      case "RecordLit": return { k: "Record", fields: e.assigns.map((a) => [a.name, infer(a.value, env)] as [string, Ty]) };
+      case "RecordLit":
+        if (!e.assigns.length && expected && (expected.k === "Set" || expected.k === "Map" || expected.k === "List")) return expected;
+        return { k: "Record", fields: e.assigns.map((a) => [a.name, infer(a.value, env)] as [string, Ty]) };
     }
     return T.Unknown;
   };
@@ -464,6 +551,16 @@ export function check(p: Program): CheckResult {
       }
       return sig.ret.ty;
     }
+    if (ref.kind === "decl" && ref.decl.kind === "Permission") {
+      const pd = ref.decl;
+      if (arity(pd.params.length)) {
+        e.args.forEach((a, i) => {
+          const prm = resolveType(pd.params[i]!.type);
+          expectTy(a, env, prm.ty, `argument ${pd.params[i]!.name} of ${name}`);
+        });
+      }
+      return T.Bool;
+    }
     if (ref.kind === "decl" && (ref.decl.kind === "Query" || ref.decl.kind === "Rule")) {
       e.args.forEach((a) => infer(a, env));
       return fail(e, `${name} is a ${ref.decl.kind.toLowerCase()}; it can be called from a test's when clause, not from an expression`, CODES.BAD_CALL);
@@ -505,12 +602,57 @@ export function check(p: Program): CheckResult {
 
   // ---------------------------------------------------------------- declarations
 
-  const baseEnv = (decl: Decl): Env => ({ decl: declKey(decl), vars: new Map(), facts: [], obligations: true });
+  const principalDecl = p.decls.find((d): d is Extract<Decl, { kind: "Principal" }> => d.kind === "Principal");
+  const callerTy: Ty | undefined = principalDecl ? { k: "Entity", name: principalDecl.entity } : undefined;
+  const usesCaps = new Set(p.decls.flatMap((d) => (d.kind === "Uses" ? d.caps.map((c) => `${c.service}.${c.op}`) : [])));
+
+  const baseEnv = (decl: Decl): Env => {
+    const env: Env = { decl: declKey(decl), vars: new Map(), facts: [], obligations: true, fieldTerms: new Map() };
+    if (callerTy) { env.callerTy = callerTy; bindFacts(env, "caller", callerTy); }
+    return env;
+  };
+
+  /** Every (entity, field) a clause list may write, for invalidating what we knew. */
+  const writesIn = (cs: Clause[], scope: Map<string, Var>): { entity: string | null; field: string }[] => {
+    const out: { entity: string | null; field: string }[] = [];
+    const walk = (list: Clause[]) => {
+      for (const cl of list) {
+        if (cl.kind === "SetClause") {
+          const t = scope.get(cl.target[0]!)?.ty;
+          const inner = t?.k === "Optional" ? t.inner : t;
+          out.push({ entity: inner?.k === "Entity" ? inner.name : null, field: cl.target[1]! });
+        }
+        if (cl.kind === "For") walk(cl.body);
+        if (cl.kind === "IfClause") { walk(cl.then); walk(cl.else ?? []); }
+      }
+    };
+    walk(cs);
+    return out;
+  };
+
+  /** After writes we did not track exactly, every binding that might be affected gets an unknown value. */
+  const invalidate = (env: Env, writes: { entity: string | null; field: string }[]): Env => {
+    if (!writes.length) return env;
+    const fieldTerms = new Map(env.fieldTerms ?? []);
+    const bindings: [string, Ty][] = [...[...env.vars].map(([n, v]) => [n, v.ty] as [string, Ty]), ...(callerTy ? [["caller", callerTy] as [string, Ty]] : [])];
+    for (const w of writes) {
+      for (const [name, t] of bindings) {
+        const ty = t.k === "Optional" ? t.inner : t;
+        if (ty.k !== "Entity" || (w.entity !== null && ty.name !== w.entity)) continue;
+        const d = entityDecl(ty.name);
+        const f = d?.fields.find((x) => x.name === w.field);
+        const sort = f ? sortOf(resolveType(f.type).ty) : null;
+        if (sort) fieldTerms.set(`${name}.${w.field}`, fresh(`${name}.${w.field}`, sort));
+      }
+    }
+    return { ...env, fieldTerms };
+  };
 
   const bindParams = (env: Env, params: { name: string; type: TypeExpr }[]): Env => {
     for (const prm of params) {
       const r = resolveType(prm.type);
       env.vars.set(prm.name, { ty: r.ty });
+      bindFacts(env, prm.name, r.ty);
       for (const pr of r.preds) {
         const sort = sortOf(r.ty);
         const penv: Env = { ...env, itTy: r.ty };
@@ -533,6 +675,25 @@ export function check(p: Program): CheckResult {
     }
   };
 
+  const entityDecl = (name: string) => {
+    const d = decls.get(name);
+    return d && d.kind === "Entity" ? d : undefined;
+  };
+
+  /** Checks the field assignments of a create or a given: known fields, right types, nothing required left out. */
+  const checkAssigns = (entity: string, assigns: { name: string; value: Expr }[], env: Env, span: Span) => {
+    const d = entityDecl(entity);
+    if (!d) { assigns.forEach((a) => infer(a.value, env)); return; }
+    for (const a of assigns) {
+      const f = d.fields.find((x) => x.name === a.name);
+      if (!f) { err(CODES.UNKNOWN_FIELD, `${entity} has no field "${a.name}"`, a.value.span); infer(a.value, env); continue; }
+      const r = resolveType(f.type);
+      expectTy(a.value, env, r.ty, `${entity}.${a.name}`);
+    }
+    const missing = d.fields.filter((f) => !f.default && !f.type.optional && !assigns.some((a) => a.name === f.name));
+    if (missing.length) err(CODES.TYPE_MISMATCH, `creating ${entity} needs ${missing.map((f) => f.name).join(", ")}, which have no default`, span);
+  };
+
   // Signatures first, so declarations can refer to each other in any order.
   for (const d of p.decls) {
     if (d.kind === "FnDecl" || d.kind === "ExternFn" || d.kind === "Query") {
@@ -540,30 +701,201 @@ export function check(p: Program): CheckResult {
     }
   }
 
+  // ---------------------------------------------------------------- rule bodies
+
+  const rejectNames = (r: Extract<Decl, { kind: "Rule" }>): string[] => {
+    if (!r.rejects) return [];
+    const e = decls.get(r.rejects);
+    return e && e.kind === "EnumDecl" ? e.variants.map((v) => v.name) : [];
+  };
+
+  /** Checks a clause list. Returns the environment after it (lets bound, guard facts added). */
+  const checkClauses = (cs: Clause[], env0: Env, rule: Extract<Decl, { kind: "Rule" }>, inCompensation: boolean): Env => {
+    let env: Env = { ...env0, vars: new Map(env0.vars) };
+    for (const cl of cs) {
+      switch (cl.kind) {
+        case "Let": {
+          const t = infer(cl.value, env);
+          const term = termOf(cl.value, env);
+          env.vars.set(cl.name, term ? { ty: t, term } : { ty: t });
+          env = { ...env, facts: [...env.facts] };
+          bindFacts(env, cl.name, t);
+          break;
+        }
+        case "Guard": {
+          expectTy(cl.cond, env, T.Bool, "a guard condition");
+          const allowed = rejectNames(rule);
+          if (!allowed.includes(cl.reject)) {
+            err(CODES.TYPE_MISMATCH, rule.rejects
+              ? `${cl.reject} is not a variant of ${rule.rejects}, which ${rule.name} rejects with`
+              : `${rule.name} rejects with ${cl.reject}, so it needs "rejects <Enum>" naming an enum that contains it`, cl.span);
+          }
+          env = withFact(env, cl.cond, false);
+          break;
+        }
+        case "SetClause": {
+          const [head, fieldName, ...more] = cl.target as [string, string, ...string[]];
+          const v = env.vars.get(head);
+          if (!v) { infer(cl.value, env); break; }
+          if (v.ty.k === "Optional" && v.ty.inner.k === "Entity") {
+            err(CODES.TYPE_MISMATCH, `${head} may be none here; check it first, for example: if ${head} != none { … }`, cl.span);
+            infer(cl.value, env);
+            break;
+          }
+          if (v.ty.k !== "Entity") { if (v.ty.k !== "Unknown") err(CODES.TYPE_MISMATCH, `only fields of stored entities can be set, and ${head} is ${show(v.ty)}`, cl.span); infer(cl.value, env); break; }
+          if (more.length) { info(CODES.NOT_YET, "setting nested fields: supported after milestone 2", cl.span); infer(cl.value, env); break; }
+          const ed = entityDecl(v.ty.name)!;
+          const f = ed.fields.find((x) => x.name === fieldName);
+          if (!f) { err(CODES.UNKNOWN_FIELD, `${v.ty.name} has no field "${fieldName}"`, cl.span); infer(cl.value, env); break; }
+          const fty = resolveType(f.type).ty;
+          expectTy(cl.value, env, fty, `${v.ty.name}.${fieldName}`);
+          // Later reads of head.field mean the value just written. Facts about the old value stay
+          // true of the old value. Any other binding of the same entity type might be this very
+          // entity, so its copy of the field becomes unknown.
+          const newTerm = termOf(cl.value, env);
+          const sort = sortOf(fty);
+          env = invalidate(env, [{ entity: v.ty.name, field: fieldName }]);
+          if (sort) env.fieldTerms!.set(`${head}.${fieldName}`, newTerm ?? fresh(`${head}.${fieldName}`, sort));
+          break;
+        }
+        case "Create": {
+          if (!entityDecl(cl.entity)) { err(CODES.TYPE_MISMATCH, `${cl.entity} is not an entity`, cl.span); break; }
+          checkAssigns(cl.entity, cl.assigns, env, cl.span);
+          if (cl.as) env.vars.set(cl.as, { ty: { k: "Entity", name: cl.entity } });
+          break;
+        }
+        case "Delete": {
+          const t = infer(cl.target, env);
+          if (t.k !== "Entity" && t.k !== "Unknown") err(CODES.TYPE_MISMATCH, `only stored entities can be deleted, and this is ${show(t)}`, cl.span);
+          break;
+        }
+        case "For": {
+          const ct = infer(cl.coll, env);
+          const elem: Ty = ct.k === "List" || ct.k === "Set" ? ct.elem : ct.k === "Entity" ? ct : T.Unknown;
+          if (elem.k === "Unknown" && ct.k !== "Unknown") err(CODES.TYPE_MISMATCH, `cannot iterate over ${show(ct)}`, cl.span);
+          const inner: Env = { ...env, vars: new Map(env.vars).set(cl.binder, { ty: elem }), facts: [...env.facts] };
+          bindFacts(inner, cl.binder, elem);
+          // The body may run any number of times, so check it with nothing known about what it writes.
+          const writes = writesIn(cl.body, inner.vars);
+          const after = checkClauses(cl.body, invalidate(inner, writes), rule, inCompensation);
+          env = invalidate({ ...env, facts: env.facts.filter((f) => after.facts.includes(f)) }, writesIn(cl.body, after.vars));
+          break;
+        }
+        case "IfClause": {
+          expectTy(cl.cond, env, T.Bool, "an if condition");
+          const a = checkClauses(cl.then, withFact(env, cl.cond, false), rule, inCompensation);
+          const b = checkClauses(cl.else ?? [], withFact(env, cl.cond, true), rule, inCompensation);
+          // A field written in either branch is one of the two values afterwards.
+          const fieldTerms = new Map(env.fieldTerms ?? []);
+          const cond = termOf(cl.cond, env);
+          for (const k of new Set([...(a.fieldTerms ?? new Map()).keys(), ...(b.fieldTerms ?? new Map()).keys()])) {
+            const ta = a.fieldTerms?.get(k), tb = b.fieldTerms?.get(k);
+            if (ta === tb) continue;
+            const known = (ta ?? tb)!;
+            const sort: Sort = known.t === "bool" ? "Bool" : known.sort;
+            const base: Term = env.fieldTerms?.get(k) ?? { t: "opaque", key: k, sort };
+            fieldTerms.set(k, cond ? app("ite", [cond, ta ?? base, tb ?? base], sort) : fresh(k, sort));
+          }
+          env = { ...env, fieldTerms, facts: env.facts.filter((f) => a.facts.includes(f) && b.facts.includes(f)) };
+          break;
+        }
+        case "Emit": {
+          const cap = `${cl.cap.service}.${cl.cap.op}`;
+          if (inCompensation) err(CODES.TYPE_MISMATCH, "a confirm or compensate block cannot emit effects (design doc, 2.4)", cl.span);
+          if (!usesCaps.has(cap)) err(CODES.TYPE_MISMATCH, `${rule.name} emits ${cap}, which the module does not declare; add "uses ${cap}"`, cl.span);
+          cl.args.forEach((a) => infer(a, env));
+          later.set("Effects (they are queued, but dispatching them and running confirm and compensate blocks arrives in milestone 4)", cl.span);
+          // Confirm and compensate blocks run later, as their own system steps, against the state
+          // at that time (design doc, 2.8). So they know only what was captured: the rule's
+          // parameters with their refinements (A3), and bindings by type. Nothing the step
+          // learned from guards or its own writes carries over, and stored fields are read
+          // fresh, constrained only by the field refinements that every commit maintains.
+          const capturedEnv = () => {
+            const e2 = bindParams(baseEnv(rule), rule.params);
+            for (const [name, v] of env.vars) {
+              if (e2.vars.has(name)) continue;
+              e2.vars.set(name, { ty: v.ty });
+              bindFacts(e2, name, v.ty);
+            }
+            return e2;
+          };
+          if (cl.confirm) checkClauses(cl.confirm, capturedEnv(), rule, true);
+          if (cl.compensate) checkClauses(cl.compensate, capturedEnv(), rule, true);
+          break;
+        }
+        case "Raise": {
+          const ev = decls.get(cl.event);
+          if (!ev || ev.kind !== "EventDecl") { cl.args.forEach((a) => infer(a, env)); break; }
+          if (cl.args.length !== ev.params.length) err(CODES.BAD_CALL, `${cl.event} takes ${ev.params.length} argument(s), got ${cl.args.length}`, cl.span);
+          cl.args.forEach((a, i) => { const prm = ev.params[i]; if (prm) expectTy(a, env, resolveType(prm.type).ty, `argument ${prm.name} of ${cl.event}`); else infer(a, env); });
+          break;
+        }
+        case "Return": {
+          const t = infer(cl.value, env);
+          if (rule.ret && !assignable(t, resolveType(rule.ret).ty)) err(CODES.TYPE_MISMATCH, `${rule.name} should return ${show(resolveType(rule.ret).ty)}, but this is ${show(t)}`, cl.span);
+          if (!rule.ret) err(CODES.TYPE_MISMATCH, `${rule.name} returns a value, so it needs a return type, as in rule ${rule.name}(…): T`, cl.span);
+          break;
+        }
+      }
+    }
+    return env;
+  };
+
+  const checkPermit = (permit: Extract<Decl, { kind: "Rule" }>["permit"], env: Env) => {
+    if (permit.mode === "expr") expectTy(permit.expr!, env, T.Bool, "a permit condition");
+    return permit.mode === "expr" ? withFact(env, permit.expr!, false) : env;
+  };
+
+  const containsEntity = (t: Ty): boolean =>
+    t.k === "Entity" || (t.k === "List" || t.k === "Set" ? containsEntity(t.elem) : t.k === "Optional" ? containsEntity(t.inner)
+      : t.k === "Record" ? t.fields.some(([, f]) => containsEntity(f)) : t.k === "Map" ? containsEntity(t.value) : false);
+
+  // ---------------------------------------------------------------- tests
+
   const later = new Map<string, Span>();
   const checkAct = (act: Act, env: Env) => {
     const target = decls.get(act.call);
-    if (act.as) infer(act.as, env);
+    if (act.as) {
+      const t = infer(act.as, env);
+      if (callerTy && !assignable(t, callerTy)) err(CODES.TYPE_MISMATCH, `"as" names the caller, which must be ${show(callerTy)}, but this is ${show(t)}`, act.as.span);
+      if (!callerTy) err(CODES.TYPE_MISMATCH, `"as" sets the caller, which needs a principal declaration`, act.as.span);
+    }
     if (!target || (target.kind !== "Query" && target.kind !== "Rule")) {
       if (target) err(CODES.BAD_CALL, `${act.call} is not a rule or query`, act.span);
+      act.args.forEach((a) => infer(a, env));
       return;
     }
-    if (target.kind === "Rule") { later.set("Tests that call rules", act.span); act.args.forEach((a) => infer(a, env)); return; }
-    const sig = sigs.get(act.call)!;
-    if (act.args.length !== sig.params.length) err(CODES.BAD_CALL, `${act.call} takes ${sig.params.length} argument(s), got ${act.args.length}`, act.span);
-    act.args.forEach((a, i) => { const prm = sig.params[i]; if (prm) expectTy(a, env, prm.type.ty, `argument ${prm.name} of ${act.call}`); else infer(a, env); });
-    if (act.outcome.kind === "reject" && !(BUILTIN_OUTCOMES as readonly string[]).includes(act.outcome.name)) {
-      err(CODES.TYPE_MISMATCH, `a query can only be rejected with ${BUILTIN_OUTCOMES.join(", ")}`, act.span);
+    const params = target.params.map((x) => ({ name: x.name, type: resolveType(x.type) }));
+    if (act.args.length !== params.length) err(CODES.BAD_CALL, `${act.call} takes ${params.length} argument(s), got ${act.args.length}`, act.span);
+    act.args.forEach((a, i) => { const prm = params[i]; if (prm) expectTy(a, env, prm.type.ty, `argument ${prm.name} of ${act.call}`); else infer(a, env); });
+    if (act.outcome.kind === "reject") {
+      const allowed = [...BUILTIN_OUTCOMES, ...(target.kind === "Rule" ? rejectNames(target) : [])];
+      if (!allowed.includes(act.outcome.name)) err(CODES.TYPE_MISMATCH, `${act.call} cannot be rejected with ${act.outcome.name}; it can be rejected with ${allowed.join(", ")}`, act.span);
     }
-    const tenv: Env = { ...env, resultTy: sig.ret.ty };
+    const resultTy = target.kind === "Query" ? sigs.get(act.call)!.ret.ty : target.ret ? resolveType(target.ret).ty : T.None;
+    const tenv: Env = { ...env, resultTy, inThen: true };
     for (const t of act.thens) expectTy(t, tenv, T.Bool, "a then clause");
   };
+
+  // ---------------------------------------------------------------- declarations
 
   for (const d of p.decls) {
     switch (d.kind) {
       case "Requirement": case "Uses": break;
+      case "Principal": {
+        const e = entityDecl(d.entity);
+        if (!e) { err(CODES.TYPE_MISMATCH, `principal ${d.entity} must be an entity`, d.span); break; }
+        if (d.by && !e.fields.some((f) => f.name === d.by)) err(CODES.UNKNOWN_FIELD, `${d.entity} has no field "${d.by}" to identify callers by`, d.span);
+        break;
+      }
       case "TypeDecl": checkRefinementsOf(d.type, declKey(d)); break;
       case "EnumDecl": for (const v of d.variants) for (const f of v.fields) checkRefinementsOf(f.type, declKey(d)); break;
+      case "Entity":
+        for (const f of d.fields) {
+          checkRefinementsOf(f.type, declKey(d));
+          if (f.default) expectTy(f.default, { ...baseEnv(d), obligations: false }, resolveType(f.type).ty, `the default of ${d.name}.${f.name}`);
+        }
+        break;
       case "FnDecl": {
         const env = bindParams(baseEnv(d), d.params);
         const sig = sigs.get(d.name)!;
@@ -572,14 +904,66 @@ export function check(p: Program): CheckResult {
         requirePreds(sig.ret.preds, d.body, sig.ret.ty, env, d.body.span, `the result of ${d.name}`);
         break;
       }
-      case "ExternFn": break;
-      case "Query": {
+      case "ExternFn": later.set("Extern functions (they are bound to host code in milestone 5)", d.span); break;
+      case "Permission": {
         const env = bindParams(baseEnv(d), d.params);
-        if (d.permit.expr) expectTy(d.permit.expr, env, T.Bool, "a permit condition");
+        expectTy(d.body, env, T.Bool, `permission ${d.name}`);
+        break;
+      }
+      case "Query": {
+        const env = checkPermit(d.permit, bindParams(baseEnv(d), d.params));
         const sig = sigs.get(d.name)!;
         const bt = infer(d.body, env, sig.ret.ty);
         if (!assignable(bt, sig.ret.ty)) err(CODES.TYPE_MISMATCH, `${d.name} should return ${show(sig.ret.ty)}, but its body is ${show(bt)}`, d.body.span);
         requirePreds(sig.ret.preds, d.body, sig.ret.ty, env, d.body.span, `the result of ${d.name}`);
+        if (containsEntity(sig.ret.ty)) {
+          diagnostics.push({ code: CODES.ENTITY_IN_QUERY, severity: "warning", span: d.span,
+            message: `${d.name} returns ${show(sig.ret.ty)}, which includes every field of the entity. Return a view record with only the fields callers should see (amendment A25).` });
+        }
+        break;
+      }
+      case "Rule": {
+        if (d.permit.mode === "anyone" || d.permit.mode === "expr") { /* fine with or without a principal */ }
+        const env = checkPermit(d.permit, bindParams(baseEnv(d), d.params));
+        checkClauses(d.clauses, env, d, false);
+        break;
+      }
+      case "Invariant": {
+        const env = { ...baseEnv(d), obligations: false };
+        expectTy(d.body, env, T.Bool, `invariant ${d.name}`);
+        later.set("Invariant proofs (invariants are checked at every commit now; proving them arrives in milestone 3)", d.span);
+        break;
+      }
+      case "Assert": {
+        const r = decls.get(d.rule);
+        if (!r || r.kind !== "Rule") break;
+        const env = bindParams({ ...baseEnv(d), obligations: false }, r.params);
+        expectTy(d.body, env, T.Bool, `assert ${d.name}`);
+        later.set("Asserts (they are type-checked now; proving them arrives in milestone 3)", d.span);
+        break;
+      }
+      case "EventDecl": for (const prm of d.params) resolveType(prm.type); break;
+      case "Trigger": {
+        const ev = d.event.parts.length === 1 ? decls.get(d.event.parts[0]!) : undefined;
+        const env = { ...baseEnv(d), obligations: false };
+        if (ev && ev.kind === "EventDecl") {
+          if (d.binders.length !== ev.params.length) err(CODES.BAD_CALL, `${ev.name} carries ${ev.params.length} value(s), but the trigger names ${d.binders.length}`, d.span);
+          d.binders.forEach((b, i) => { const prm = ev.params[i]; env.vars.set(b, { ty: prm ? resolveType(prm.type).ty : T.Unknown }); });
+        } else d.binders.forEach((b) => env.vars.set(b, { ty: T.Unknown }));
+        const r = decls.get(d.rule);
+        if (r && r.kind === "Rule") {
+          if (d.args.length !== r.params.length) err(CODES.BAD_CALL, `${r.name} takes ${r.params.length} argument(s), got ${d.args.length}`, d.span);
+          d.args.forEach((a, i) => {
+            const prm = r.params[i];
+            if (!prm) { infer(a, env); return; }
+            const want = resolveType(prm.type).ty;
+            // A trigger may pass an Id where the rule takes the entity: the runtime loads it.
+            const got = infer(a, env);
+            const ok = assignable(got, want) || (want.k === "Entity" && got.k === "Id" && got.target === want.name);
+            if (!ok) err(CODES.TYPE_MISMATCH, `argument ${prm.name} of ${r.name} should be ${show(want)}, but it is ${show(got)}`, a.span);
+          });
+          if (d.asSystem && r.permit.mode !== "system" && r.permit.mode !== "anyone") { /* system steps pass any permit */ }
+        }
         break;
       }
       case "TestDecl": case "PropertyDecl": {
@@ -589,16 +973,17 @@ export function check(p: Program): CheckResult {
           if (d.where) expectTy(d.where, env, T.Bool, "a property's where condition");
         }
         for (const g of d.givens) {
-          later.set("Given setups (they need the store)", g.span);
+          if (!entityDecl(g.entity)) { err(CODES.TYPE_MISMATCH, `${g.entity} is not an entity`, g.span); continue; }
+          checkAssigns(g.entity, g.assigns, env, g.span);
           env.vars.set(g.name, { ty: { k: "Entity", name: g.entity } });
         }
         for (const act of d.acts) checkAct(act, env);
         break;
       }
-      default: later.set(`${d.kind.replace(/Decl$/, "")} declarations`, d.span);
+      case "Migration": later.set("Migrations (they run, with a dry run, from milestone 6)", d.span); break;
     }
   }
-  for (const [what, span] of later) info(CODES.NOT_YET, `${what}: checked from milestone 2`, span);
+  for (const [what, span] of later) info(CODES.NOT_YET, what, span);
 
   return { diagnostics, obligations, types, resolution, sigs, resolveType };
 }

@@ -1,0 +1,18 @@
+{
+  "title": "A property about which callers are accepted",
+  "source": "Design doc, Phase 5, example 3; was negative case n003 until amendment A23",
+  "covers": [
+    "A23"
+  ],
+  "expect": {
+    "parse": "ok",
+    "check": {
+      "errors": [],
+      "tests": {
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      }
+    }
+  }
+}
