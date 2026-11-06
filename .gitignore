@@ -5,3 +5,6 @@ coverage/
 .DS_Store
 # Local proof caches are rebuilt; the shared one is committed under spec/ from milestone 1.
 .charter-cache/
+
+# Benchmark runs are data, not source. Publish results deliberately, with their prompts.
+bench/results/

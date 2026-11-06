@@ -1,0 +1,32 @@
+module wallet@0.1.0
+principal Person
+
+entity Person { name: Text, balance: Int where >= 0 = 0 }
+enum PayError { SelfPayment, InsufficientFunds }
+type TopUpAmount = Int where it >= 1 and it <= 100000
+
+rule Register(name: Text): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule TopUp(amount: TopUpAmount): Int
+  permit anyone
+  let me = caller
+  set me.balance = me.balance + amount
+  return me.balance
+
+// The contract calls the first argument "to", but "to" is a Charter reserved word (it appears
+// in migrations). Arguments are positional, so the program names it "payee".
+rule Pay(payee: Person, amount: Int where >= 1): Int rejects PayError
+  permit anyone
+  let me = caller
+  guard payee.id != me.id else reject SelfPayment
+  guard me.balance >= amount else reject InsufficientFunds
+  set me.balance = me.balance - amount
+  set payee.balance = payee.balance + amount
+  return me.balance
+
+query Balance(): Int permit anyone = caller.balance
+
+invariant NeverNegative: Person.balance >= 0

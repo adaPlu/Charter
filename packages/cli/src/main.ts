@@ -144,12 +144,13 @@ async function cmdServe(file: string, opts: Opts, out: string[]): Promise<number
   const r = loadRunnable(file, opts, out);
   if (!r) return 1;
   const { serve } = await import("./serve.ts");
-  const s = await serve(r.l.program, r.l.checked, r.i, opts.port ?? 8080, (line) => process.stdout.write(line + "\n"));
+  const s = await serve(r.l.program, r.l.checked, r.i, opts.port ?? 8080, (line) => process.stdout.write(line + "\n"), { systemHeader: opts.systemHeader });
   process.stdout.write([
     `${OK} serving ${file} on http://127.0.0.1:${s.port}`,
     `    database: ${opts.db ?? "in memory (nothing is kept)"}`,
     `    POST /rules/<Name> and /queries/<Name> with {"args": [...]}; GET /schema`,
     `${WARN} development only: the caller comes from the X-Charter-Caller header, with no authentication`,
+    ...(opts.systemHeader ? [`${WARN} --dev-system-header: X-Charter-System: true runs a call as the system (benchmarks only)`] : []),
     "",
   ].join("\n"));
   return "running";
@@ -178,7 +179,7 @@ function cmdFmt(file: string, flags: Set<string>, out: string[]): number {
   return 0;
 }
 
-interface Opts { db?: string; as?: string; port?: number; runs?: number; system: boolean }
+interface Opts { db?: string; as?: string; port?: number; runs?: number; system: boolean; systemHeader: boolean }
 const VALUE_FLAGS = ["--db", "--as", "--port", "--runs"];
 
 async function main(argv: string[]): Promise<number | "running"> {
@@ -186,7 +187,7 @@ async function main(argv: string[]): Promise<number | "running"> {
   const out: string[] = [];
   let code: number | "running";
   const value = (flag: string) => { const k = rest.indexOf(flag); return k >= 0 ? rest[k + 1] : undefined; };
-  const opts: Opts = { system: rest.includes("--system") };
+  const opts: Opts = { system: rest.includes("--system"), systemHeader: rest.includes("--dev-system-header") };
   if (value("--db")) opts.db = value("--db")!;
   if (value("--as")) opts.as = value("--as")!;
   if (value("--port")) opts.port = Number(value("--port"));

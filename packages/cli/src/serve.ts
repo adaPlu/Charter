@@ -39,7 +39,12 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   return text ? JSON.parse(text) : {};
 }
 
-export function serve(p: Program, c: CheckResult, i: Interpreter, port: number, log: (s: string) => void) {
+export interface ServeOptions {
+  /** Benchmarks only: let the X-Charter-System header run a call as the system. */
+  systemHeader?: boolean;
+}
+
+export function serve(p: Program, c: CheckResult, i: Interpreter, port: number, log: (s: string) => void, opts: ServeOptions = {}) {
   const endpoints = p.decls.filter((d): d is Extract<Decl, { kind: "Rule" | "Query" }> => d.kind === "Rule" || d.kind === "Query");
   const schema = endpoints.map((d) => ({
     kind: d.kind.toLowerCase(),
@@ -76,7 +81,8 @@ export function serve(p: Program, c: CheckResult, i: Interpreter, port: number, 
       const header = req.headers["x-charter-caller"];
       const caller = typeof header === "string" && header ? { t: "text" as const, v: header } : null;
       const isQuery = d.kind === "Query";
-      const o = isQuery ? i.callQuery(d.name, args, { caller }) : i.callRule(d.name, args, { caller }).outcome;
+      const system = opts.systemHeader === true && req.headers["x-charter-system"] === "true";
+      const o = isQuery ? i.callQuery(d.name, args, { caller, system }) : i.callRule(d.name, args, { caller, system }).outcome;
       log(`${req.method} ${url.pathname}  ${o.kind === "ok" ? "ok" : o.kind === "reject" ? `rejected ${o.name}` : `fault ${o.fault}`}`);
       return send(res, statusOf(o, isQuery), body(o));
     } catch (e) {

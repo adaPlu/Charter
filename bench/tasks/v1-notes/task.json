@@ -1,0 +1,58 @@
+{
+  "id": "v1-notes",
+  "family": "F2",
+  "validationOnly": true,
+  "authoredBy": "Charter design process. Not independent: used to validate the harness, excluded from pilot results (design doc, 7.1).",
+  "request": "People keep private notes. An operator registers people by name. A signed-in person can add a note with a title that is not blank and is at most 100 characters long. They can list their own notes, sorted by title, and delete their own notes. Nobody can see or delete anyone else's notes.",
+  "contract": {
+    "rules": [
+      { "name": "Register", "params": [["name", "Text"]], "returns": "Id", "who": "operator only (a system call)" },
+      { "name": "AddNote", "params": [["title", "Text"]], "returns": "Id", "who": "any signed-in person",
+        "rejects": { "ValidationError": "the title is blank or longer than 100 characters" } },
+      { "name": "DeleteNote", "params": [["note", "Id"]], "returns": "nothing", "who": "the note's owner",
+        "rejects": { "NotFound": "no such note", "Denied": "the caller is not the owner" } }
+    ],
+    "queries": [
+      { "name": "MyNotes", "params": [], "returns": "List of { id: Id, title: Text }, sorted by title", "who": "any signed-in person" }
+    ]
+  },
+  "visibleTests": ["adds and lists notes"],
+  "tests": [
+    {
+      "name": "adds and lists notes",
+      "steps": [
+        { "call": "rules/Register", "args": ["Ana"], "system": true, "expect": { "status": 200 }, "save": "ana" },
+        { "call": "rules/AddNote", "args": ["Milk"], "as": "$ana", "expect": { "status": 200 }, "save": "milk" },
+        { "call": "rules/AddNote", "args": ["Apples"], "as": "$ana", "expect": { "status": 200 }, "save": "apples" },
+        { "call": "queries/MyNotes", "args": [], "as": "$ana", "expect": { "status": 200, "value": [{ "id": "$apples", "title": "Apples" }, { "id": "$milk", "title": "Milk" }] } }
+      ]
+    },
+    {
+      "name": "notes are private",
+      "steps": [
+        { "call": "rules/Register", "args": ["Ana"], "system": true, "expect": { "status": 200 }, "save": "ana" },
+        { "call": "rules/Register", "args": ["Ben"], "system": true, "expect": { "status": 200 }, "save": "ben" },
+        { "call": "rules/AddNote", "args": ["Secret"], "as": "$ana", "expect": { "status": 200 }, "save": "secret" },
+        { "call": "queries/MyNotes", "args": [], "as": "$ben", "expect": { "status": 200, "value": [] } },
+        { "call": "rules/DeleteNote", "args": ["$secret"], "as": "$ben", "expect": { "status": 403 } },
+        { "call": "queries/MyNotes", "args": [], "as": "$ana", "expect": { "status": 200, "length": 1 } },
+        { "call": "rules/DeleteNote", "args": ["$secret"], "as": "$ana", "expect": { "status": 200 } },
+        { "call": "queries/MyNotes", "args": [], "as": "$ana", "expect": { "status": 200, "value": [] } }
+      ]
+    },
+    {
+      "name": "rejects bad input and unknown callers",
+      "steps": [
+        { "call": "rules/Register", "args": ["Ana"], "system": true, "expect": { "status": 200 }, "save": "ana" },
+        { "call": "rules/AddNote", "args": ["   "], "as": "$ana", "expect": { "status": 400 } },
+        { "call": "rules/AddNote", "args": ["$long101"], "as": "$ana", "expect": { "status": 400 } },
+        { "call": "rules/AddNote", "args": ["$long100"], "as": "$ana", "expect": { "status": 200 } },
+        { "call": "rules/AddNote", "args": ["No caller"], "expect": { "status": 403 } },
+        { "call": "rules/Register", "args": ["Mallory"], "as": "$ana", "expect": { "status": 403 } },
+        { "call": "rules/DeleteNote", "args": ["no-such-note"], "as": "$ana", "expect": { "status": 404 } },
+        { "call": "queries/MyNotes", "args": [], "as": "$ana", "expect": { "status": 200, "length": 1 } }
+      ]
+    }
+  ],
+  "constants": { "long100": { "repeat": "x", "times": 100 }, "long101": { "repeat": "x", "times": 101 } }
+}

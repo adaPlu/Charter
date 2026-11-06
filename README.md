@@ -11,18 +11,18 @@ The full design, all nine phases, is in [docs/charter-design.md](docs/charter-de
 | 0. Foundations | Done. Repository, layer rule, frozen grammar, conformance corpus, CI. |
 | 1. Calculator end to end | Done. Parser, printer, hashes, name resolution, type checker, Z3 proofs, interpreter, tests. |
 | **2. State, and readiness for the H1 pilot** | **Done, except the pilot run.** Rules as transactions on SQLite, invariants at every commit, step log and replay, `charter serve`, the grammar frozen and exported for constrained decoding. |
-| Gate: H1 pilot | **Waiting on decisions** (below). Can stop the project if Charter shows no advantage. |
+| Gate: H1 pilot | **Harness built and tested; pilot not run.** Waiting on task authors, model access and a budget. See [bench/README.md](bench/README.md). |
 | 3 to 9 | Planned. See the design doc, section 8.5. |
 
 What runs now: types, functions, queries, entities, rules, permissions, invariants, events and triggers, and tests and properties with setups and callers. Effects are queued in the outbox but not yet dispatched (milestone 4). Invariants are checked at every commit; proving them arrives in milestone 3.
 
 ### What the H1 pilot needs
 
-The pilot (design doc, 7.3) compares how often models write valid Charter against valid TypeScript, both under constrained decoding. The tooling is ready: the frozen grammar exported as [spec/charter.gbnf](spec/charter.gbnf), and a checker whose error codes a repair loop can read. Running it needs three decisions:
+The pilot (design doc, 7.3) compares how often models write valid Charter against valid TypeScript for the same task. The harness in [bench/](bench/README.md) is built and tested: it prompts a model, checks the program with the language's real tool, repairs from diagnostics, and runs hidden black-box tests over HTTP against both languages. It can only compare free decoding for now: constrained decoding needs a llama.cpp server, and no TypeScript grammar exists. Running the pilot needs three decisions:
 
-1. **Model access.** Two pinned models, with API keys or a local model server.
-2. **A budget.** 20 tasks × 2 models × 2 arms × 3 samples, plus repair rounds.
-3. **Task authors.** Phase 7 requires tasks and hidden tests written independently of the design. Tasks written by the same process that designed Charter would bias the result.
+1. **Task authors.** Phase 7 requires tasks and hidden tests written independently of the design. The two tasks in `bench/tasks` test the harness and are excluded from results.
+2. **Model access.** For example, an Anthropic API key for Claude Opus 5.5 and Claude Sonnet 5.5.
+3. **A budget.** Estimated at $15 to $40 for both models; [bench/README.md](bench/README.md) has the details.
 
 ## Try it
 

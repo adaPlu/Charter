@@ -1,0 +1,24 @@
+module notes@0.1.0
+principal Person
+
+entity Person { name: Text }
+type Title = Text where len(trim(it)) >= 1 and len(it) <= 100
+entity Note { owner: Id<Person>, title: Title }
+type NoteView = { id: Id<Note>, title: Text }
+
+rule Register(name: Text): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule AddNote(title: Title): Id<Note>
+  permit anyone
+  create Note { owner = caller.id, title = title } as n
+  return n.id
+
+rule DeleteNote(n: Note)
+  permit n.owner == caller.id
+  delete n
+
+query MyNotes(): List<NoteView> permit anyone =
+  select { id = n.id, title = n.title } for n in Note where n.owner == caller.id order by n.title

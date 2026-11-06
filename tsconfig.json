@@ -4,7 +4,15 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts"]
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "bench/harness/**/*.ts",
+    "bench/scaffold-ts/runtime.ts",
+    "bench/scaffold-ts/server.ts"
+  ]
 }

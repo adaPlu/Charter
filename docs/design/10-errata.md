@@ -2,6 +2,20 @@
 
 This section records where building Charter showed the design to be wrong or incomplete. The phases above are kept as written.
 
+## The H1 pilot: harness built, pilot not run
+
+The pilot harness (`bench/`) prompts a model, checks its program with the language's real tool, repairs from diagnostics, and runs hidden black-box tests over HTTP against both languages. Building it found:
+
+| Finding | Detail | Resolution |
+|---|---|---|
+| **The planned arms cannot all run** | Phase 7 compares constrained Charter (A) with constrained TypeScript (D). Hosted APIs and Ollama cannot hold output to a GBNF grammar, and no TypeScript GBNF grammar exists. | The pilot compares free decoding, C against B. Arm A runs only on a llama.cpp server. The harness refuses arm D rather than faking it. |
+| **No temperature-0 runs** | Phase 7 asks for one run per cell at temperature 0. Current Claude models reject sampling parameters. | Repeated samples only. |
+| **Reserved words take natural names** | The wallet task's contract names a parameter `to`, which Charter reserves for migrations. My own reference solution broke on it. `by`, `set`, `order`, `result` and `open` are similar traps. | A real cost of the grammar, kept in the task so the pilot measures it. Contextual keywords are a candidate change after the pilot. |
+| **`caller` cannot be written to** | `set caller.balance = …` is not allowed, because `caller` is a keyword, not a binding. The workaround is `let me = caller`. | Documented in the model manual. A candidate for a language change after the pilot. |
+| **A harness bug that would have failed every TypeScript program** | The TypeScript work folder lacked `"type": "module"`, so `tsc` rejected the scaffold itself. The no-model dry run caught it before any model was called. | Fixed. A regression test runs the dry run in CI. |
+| **Refusal fallbacks would contaminate results** | A fallback answers with a different model. | Off by default in the harness; a refusal is recorded as a failed run. |
+| **Task authors must be independent** | The two tasks in `bench/tasks` were written by the design process. | They are marked validation-only and excluded from the analysis. The 20 pilot tasks need independent authors. |
+
 ## Milestone 2: state, and readiness for the pilot
 
 Milestone 2 built the SQLite store, rules as serializable transactions, permissions, invariants and referential integrity checked at every commit, events and triggers, the step log and replay, tests with setups and callers, `charter serve`, `charter replay`, and the GBNF export. It also settled the open grammar questions (A22 to A25) and froze the grammar for the pilot. These are its findings.

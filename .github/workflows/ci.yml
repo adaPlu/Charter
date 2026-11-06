@@ -38,7 +38,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.json
 
       - name: Tests (scripts, every package, conformance through the real toolchain)
-        run: node --test --test-force-exit "scripts/*.test.mjs" "packages/*/test/*.test.ts"
+        run: node --test --test-force-exit "scripts/*.test.mjs" "packages/*/test/*.test.ts" "bench/harness/*.test.ts"
 
       - name: Milestone 1 and 2 demos
         shell: bash

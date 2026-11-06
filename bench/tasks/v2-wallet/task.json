@@ -1,0 +1,59 @@
+{
+  "id": "v2-wallet",
+  "family": "F4",
+  "validationOnly": true,
+  "authoredBy": "Charter design process. Not independent: used to validate the harness, excluded from pilot results (design doc, 7.1).",
+  "request": "Each person has a wallet with a balance in whole cents, starting at zero. An operator registers people by name. A signed-in person can top up their own wallet by between 1 and 100000 cents at a time. They can pay another registered person any amount of at least 1 cent, as long as their balance covers it. A payment that the balance does not cover is rejected as InsufficientFunds and changes nothing. Paying yourself is rejected as SelfPayment. A balance can never become negative. A signed-in person can see their own balance.",
+  "contract": {
+    "rules": [
+      { "name": "Register", "params": [["name", "Text"]], "returns": "Id", "who": "operator only (a system call)" },
+      { "name": "TopUp", "params": [["amount", "Int"]], "returns": "Int: the new balance", "who": "any signed-in person",
+        "rejects": { "ValidationError": "the amount is outside 1 to 100000" } },
+      { "name": "Pay", "params": [["to", "Id"], ["amount", "Int"]], "returns": "Int: the payer's new balance", "who": "any signed-in person",
+        "rejects": { "ValidationError": "the amount is below 1", "NotFound": "no such recipient", "SelfPayment": "paying yourself", "InsufficientFunds": "the balance does not cover the amount" } }
+    ],
+    "queries": [
+      { "name": "Balance", "params": [], "returns": "Int", "who": "any signed-in person" }
+    ]
+  },
+  "visibleTests": ["top up and pay"],
+  "tests": [
+    {
+      "name": "top up and pay",
+      "steps": [
+        { "call": "rules/Register", "args": ["Ana"], "system": true, "expect": { "status": 200 }, "save": "ana" },
+        { "call": "rules/Register", "args": ["Ben"], "system": true, "expect": { "status": 200 }, "save": "ben" },
+        { "call": "rules/TopUp", "args": [500], "as": "$ana", "expect": { "status": 200, "value": 500 } },
+        { "call": "rules/Pay", "args": ["$ben", 200], "as": "$ana", "expect": { "status": 200, "value": 300 } },
+        { "call": "queries/Balance", "args": [], "as": "$ben", "expect": { "status": 200, "value": 200 } },
+        { "call": "queries/Balance", "args": [], "as": "$ana", "expect": { "status": 200, "value": 300 } }
+      ]
+    },
+    {
+      "name": "payments the balance does not cover change nothing",
+      "steps": [
+        { "call": "rules/Register", "args": ["Ana"], "system": true, "expect": { "status": 200 }, "save": "ana" },
+        { "call": "rules/Register", "args": ["Ben"], "system": true, "expect": { "status": 200 }, "save": "ben" },
+        { "call": "rules/TopUp", "args": [100], "as": "$ana", "expect": { "status": 200 } },
+        { "call": "rules/Pay", "args": ["$ben", 101], "as": "$ana", "expect": { "status": 409, "reason": "InsufficientFunds" } },
+        { "call": "queries/Balance", "args": [], "as": "$ana", "expect": { "status": 200, "value": 100 } },
+        { "call": "queries/Balance", "args": [], "as": "$ben", "expect": { "status": 200, "value": 0 } },
+        { "call": "rules/Pay", "args": ["$ben", 100], "as": "$ana", "expect": { "status": 200, "value": 0 } }
+      ]
+    },
+    {
+      "name": "rejects self payment, unknown recipients and bad amounts",
+      "steps": [
+        { "call": "rules/Register", "args": ["Ana"], "system": true, "expect": { "status": 200 }, "save": "ana" },
+        { "call": "rules/TopUp", "args": [50], "as": "$ana", "expect": { "status": 200 } },
+        { "call": "rules/Pay", "args": ["$ana", 10], "as": "$ana", "expect": { "status": 409, "reason": "SelfPayment" } },
+        { "call": "rules/Pay", "args": ["nobody", 10], "as": "$ana", "expect": { "status": 404 } },
+        { "call": "rules/TopUp", "args": [0], "as": "$ana", "expect": { "status": 400 } },
+        { "call": "rules/TopUp", "args": [100001], "as": "$ana", "expect": { "status": 400 } },
+        { "call": "rules/TopUp", "args": [10], "expect": { "status": 403 } },
+        { "call": "queries/Balance", "args": [], "as": "$ana", "expect": { "status": 200, "value": 50 } }
+      ]
+    }
+  ],
+  "constants": {}
+}

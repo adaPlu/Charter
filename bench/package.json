@@ -1,0 +1,10 @@
+{
+  "name": "@charter-bench/harness",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The H1 pilot harness (design doc, 7.3). Not part of the toolchain: it may call models, and nothing in packages/ may import it.",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.137.0"
+  }
+}
