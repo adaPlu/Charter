@@ -347,6 +347,7 @@ class Parser {
     this.expect("permit");
     let p: A.Permit;
     if (this.eat("anyone")) p = { mode: "anyone", links: [], span };
+    else if (this.eat("public")) p = { mode: "public", links: [], span };
     else if (this.eat("system")) p = { mode: "system", links: [], span };
     else p = { mode: "expr", expr: this.expr(), links: [], span };
     p.links = this.links();

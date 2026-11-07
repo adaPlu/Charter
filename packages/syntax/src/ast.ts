@@ -29,7 +29,7 @@ export interface Rule {
   kind: "Rule"; name: string; params: Param[]; ret?: TypeExpr; rejects?: string; links: Links;
   permit: Permit; clauses: Clause[]; span: Span;
 }
-export interface Permit { mode: "anyone" | "system" | "expr"; expr?: Expr; links: Links; span: Span }
+export interface Permit { mode: "anyone" | "public" | "system" | "expr"; expr?: Expr; links: Links; span: Span }
 export interface EventDecl { kind: "EventDecl"; name: string; params: Param[]; span: Span }
 export interface Trigger { kind: "Trigger"; event: QName; binders: string[]; rule: string; args: Expr[]; asSystem: boolean; links: Links; span: Span }
 export interface Invariant { kind: "Invariant"; name: string; body: Expr; links: Links; span: Span }

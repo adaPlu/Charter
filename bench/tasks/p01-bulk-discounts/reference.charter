@@ -1,0 +1,13 @@
+module bulkdiscounts@0.1.0
+
+type Quantity = Int where it >= 1 and it <= 50
+type UnitCents = Int where it >= 1 and it <= 100000
+
+fn afterBulk(subtotal: Int, quantity: Int): Int =
+  if quantity >= 10 then subtotal - subtotal / 10 else subtotal
+
+fn afterMember(amount: Int, member: Bool): Int =
+  if member then amount - amount / 20 else amount
+
+query Quote(quantity: Quantity, unitCents: UnitCents, member: Bool): Int permit anyone =
+  afterMember(afterBulk(quantity * unitCents, quantity), member)

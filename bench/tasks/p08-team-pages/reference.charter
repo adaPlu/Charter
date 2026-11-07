@@ -1,0 +1,42 @@
+module teams@0.1.0
+principal Person
+
+entity Person { name: Text }
+type TeamName = Text where len(trim(it)) >= 1
+type PageTitle = Text where len(trim(it)) >= 1 and len(it) <= 80
+entity Team { owner: Id<Person>, name: TeamName }
+entity Membership { team: Id<Team>, member: Id<Person> }
+entity Page { team: Id<Team>, author: Id<Person>, title: PageTitle }
+type PageView = { title: Text, team: Id<Team> }
+
+permission IsMember(u: Person, t: Id<Team>) = exists m in Membership: m.team == t and m.member == u.id
+permission OwnsTeam(u: Person, t: Id<Team>) = exists o in Team: o.id == t and o.owner == u.id
+
+rule Register(name: Text): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule CreateTeam(name: TeamName): Id<Team>
+  permit anyone
+  create Team { owner = caller.id, name = name } as t
+  create Membership { team = t.id, member = caller.id } as m
+  return t.id
+
+rule AddMember(team: Team, person: Person)
+  permit team.owner == caller.id
+  if not (exists m in Membership: m.team == team.id and m.member == person.id) {
+    create Membership { team = team.id, member = person.id } as m2
+  }
+
+rule CreatePage(team: Team, title: PageTitle): Id<Page>
+  permit IsMember(caller, team.id)
+  create Page { team = team.id, author = caller.id, title = title } as pg
+  return pg.id
+
+rule RenamePage(page: Page, title: PageTitle)
+  permit page.author == caller.id or OwnsTeam(caller, page.team)
+  set page.title = title
+
+query ReadPage(page: Page): PageView permit IsMember(caller, page.team) =
+  { title = page.title, team = page.team }

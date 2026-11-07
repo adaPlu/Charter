@@ -1,0 +1,455 @@
+{
+  "id": "p08-team-pages",
+  "family": "F3",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers people. A person creates a team and becomes its owner and member. Only the owner can add registered people as members; adding an existing member is harmless. Members can create pages with titles of 1–80 nonblank characters and read pages in their team. Only the page author or team owner can rename a page. Outsiders cannot see pages.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "CreateTeam",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "registered caller",
+        "rejects": {
+          "ValidationError": "name blank"
+        }
+      },
+      {
+        "name": "AddMember",
+        "params": [
+          [
+            "team",
+            "Id"
+          ],
+          [
+            "person",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "team owner",
+        "rejects": {
+          "NotFound": "team or person missing",
+          "Denied": "not team owner"
+        }
+      },
+      {
+        "name": "CreatePage",
+        "params": [
+          [
+            "team",
+            "Id"
+          ],
+          [
+            "title",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "team member",
+        "rejects": {
+          "NotFound": "team missing",
+          "Denied": "not member",
+          "ValidationError": "title blank or too long"
+        }
+      },
+      {
+        "name": "RenamePage",
+        "params": [
+          [
+            "page",
+            "Id"
+          ],
+          [
+            "title",
+            "Text"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "page author or team owner",
+        "rejects": {
+          "NotFound": "page missing",
+          "Denied": "not permitted",
+          "ValidationError": "title blank or too long"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "ReadPage",
+        "params": [
+          [
+            "page",
+            "Id"
+          ]
+        ],
+        "returns": "Record { title: Text, team: Id }",
+        "who": "team member",
+        "rejects": {
+          "NotFound": "page missing",
+          "Denied": "not team member"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "team membership"
+  ],
+  "tests": [
+    {
+      "name": "team membership",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateTeam",
+          "args": [
+            "Design"
+          ],
+          "as": "$ana",
+          "save": "team",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddMember",
+          "args": [
+            "$team",
+            "$ben"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreatePage",
+          "args": [
+            "$team",
+            "Plan"
+          ],
+          "as": "$ben",
+          "save": "page",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ReadPage",
+          "args": [
+            "$page"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": {
+              "title": "Plan",
+              "team": "$team"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "outsiders refused",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateTeam",
+          "args": [
+            "Design"
+          ],
+          "as": "$ana",
+          "save": "team",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreatePage",
+          "args": [
+            "$team",
+            "Secret"
+          ],
+          "as": "$ana",
+          "save": "page",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ReadPage",
+          "args": [
+            "$page"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 404,
+            "reason": "Denied"
+          }
+        },
+        {
+          "call": "rules/CreatePage",
+          "args": [
+            "$team",
+            "Hack"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/AddMember",
+          "args": [
+            "$team",
+            "$ben"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        }
+      ]
+    },
+    {
+      "name": "page edit permissions",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Cal"
+          ],
+          "system": true,
+          "save": "cal",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateTeam",
+          "args": [
+            "Design"
+          ],
+          "as": "$ana",
+          "save": "team",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddMember",
+          "args": [
+            "$team",
+            "$ben"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddMember",
+          "args": [
+            "$team",
+            "$cal"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreatePage",
+          "args": [
+            "$team",
+            "Draft"
+          ],
+          "as": "$ben",
+          "save": "page",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/RenamePage",
+          "args": [
+            "$page",
+            "No"
+          ],
+          "as": "$cal",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/RenamePage",
+          "args": [
+            "$page",
+            "Final"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ReadPage",
+          "args": [
+            "$page"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200,
+            "value": {
+              "title": "Final",
+              "team": "$team"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "missing and validation",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateTeam",
+          "args": [
+            " "
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/CreateTeam",
+          "args": [
+            "OK"
+          ],
+          "as": "$ana",
+          "save": "team",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddMember",
+          "args": [
+            "$team",
+            "missing"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 404
+          }
+        },
+        {
+          "call": "rules/RenamePage",
+          "args": [
+            "missing",
+            "OK"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 404
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

@@ -1,0 +1,37 @@
+module rooms@0.1.0
+principal Person
+
+// Charter has no way to read single characters of Text (no indexing, substring or regex),
+// so the YYYY-MM-DD shape is approximated: ten characters, starting with a digit, containing "-".
+entity Person { name: Text }
+type RoomName = Text where len(trim(it)) >= 1
+type Capacity = Int where it >= 1 and it <= 100
+type DateText = Text where len(it) == 10 and it >= "0" and it < ":" and contains(it, "-")
+type SlotText = Text where it == "morning" or it == "afternoon"
+entity Room { name: RoomName, capacity: Capacity }
+entity Booking { owner: Id<Person>, room: Id<Room>, date: DateText, slot: SlotText }
+enum BookError { AlreadyBooked }
+type BookingView = { id: Id<Booking>, room: Id<Room>, date: Text, slot: Text }
+
+rule Register(name: Text): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule CreateRoom(name: RoomName, capacity: Capacity): Id<Room>
+  permit system
+  create Room { name = name, capacity = capacity } as r
+  return r.id
+
+rule Book(room: Room, date: DateText, slot: SlotText): Id<Booking> rejects BookError
+  permit anyone
+  guard not (exists b in Booking: b.room == room.id and b.date == date and b.slot == slot) else reject AlreadyBooked
+  create Booking { owner = caller.id, room = room.id, date = date, slot = slot } as bk
+  return bk.id
+
+rule Cancel(booking: Booking)
+  permit booking.owner == caller.id
+  delete booking
+
+query MyBookings(): List<BookingView> permit anyone =
+  select { id = b.id, room = b.room, date = b.date, slot = b.slot } for b in Booking where b.owner == caller.id order by b.date, b.slot, b.id

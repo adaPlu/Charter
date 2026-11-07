@@ -1,0 +1,32 @@
+module invoices@0.1.0
+principal Person
+
+entity Person { name: Text }
+entity Invoice { customer: Id<Person>, total: Int where it >= 1 and it <= 1000000, paid: Int where >= 0 = 0 }
+enum InvoiceError { Overpayment, ExcessRefund }
+
+rule Register(name: Text where len(trim(it)) >= 1): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule CreateInvoice(customer: Person, totalCents: Int where it >= 1 and it <= 1000000): Id<Invoice>
+  permit system
+  create Invoice { customer = customer.id, total = totalCents } as inv
+  return inv.id
+
+rule PayInvoice(invoice: Invoice, cents: Int where >= 1): Int rejects InvoiceError
+  permit invoice.customer == caller.id
+  guard cents <= invoice.total - invoice.paid else reject Overpayment
+  set invoice.paid = invoice.paid + cents
+  return invoice.total - invoice.paid
+
+rule Refund(invoice: Invoice, cents: Int where >= 1): Int rejects InvoiceError
+  permit system
+  guard cents <= invoice.paid else reject ExcessRefund
+  set invoice.paid = invoice.paid - cents
+  return invoice.total - invoice.paid
+
+query Outstanding(invoice: Invoice): Int permit invoice.customer == caller.id = invoice.total - invoice.paid
+
+invariant PaidWithinTotal: Invoice.paid <= Invoice.total

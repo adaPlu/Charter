@@ -1,0 +1,438 @@
+{
+  "id": "p13-event-tickets",
+  "family": "F4",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers buyers and creates events with a nonblank title, ticket price 1–100000 cents, and remaining stock 0–1000. Buyers may buy 1–10 tickets at a time, if enough tickets remain. Buying creates a purchase id and reduces stock atomically. Its total price is quantity times ticket price. A buyer may cancel only their own purchase, once, restoring stock. Anyone can see remaining stock; only the buyer sees a purchase total.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "CreateEvent",
+        "params": [
+          [
+            "title",
+            "Text"
+          ],
+          [
+            "priceCents",
+            "Int"
+          ],
+          [
+            "stock",
+            "Int"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {
+          "ValidationError": "title blank or price/stock invalid"
+        }
+      },
+      {
+        "name": "Buy",
+        "params": [
+          [
+            "event",
+            "Id"
+          ],
+          [
+            "quantity",
+            "Int"
+          ]
+        ],
+        "returns": "Id: purchase id",
+        "who": "registered buyer",
+        "rejects": {
+          "NotFound": "event missing",
+          "ValidationError": "quantity not 1..10",
+          "SoldOut": "not enough tickets"
+        }
+      },
+      {
+        "name": "CancelPurchase",
+        "params": [
+          [
+            "purchase",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "purchase buyer",
+        "rejects": {
+          "NotFound": "purchase missing",
+          "Denied": "not buyer",
+          "AlreadyCancelled": "already cancelled"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "Remaining",
+        "params": [
+          [
+            "event",
+            "Id"
+          ]
+        ],
+        "returns": "Int",
+        "who": "anyone",
+        "rejects": {
+          "NotFound": "event missing"
+        }
+      },
+      {
+        "name": "PurchaseTotal",
+        "params": [
+          [
+            "purchase",
+            "Id"
+          ]
+        ],
+        "returns": "Int: purchase amount in cents",
+        "who": "purchase buyer",
+        "rejects": {
+          "NotFound": "purchase missing",
+          "Denied": "not buyer"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "buy and price"
+  ],
+  "tests": [
+    {
+      "name": "buy and price",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Show",
+            250,
+            5
+          ],
+          "system": true,
+          "save": "event",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$event",
+            2
+          ],
+          "as": "$ana",
+          "save": "purchase",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/PurchaseTotal",
+          "args": [
+            "$purchase"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 500
+          }
+        },
+        {
+          "call": "queries/Remaining",
+          "args": [
+            "$event"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "sold out with rollback",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Show",
+            50,
+            1
+          ],
+          "system": true,
+          "save": "event",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$event",
+            2
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "SoldOut"
+          }
+        },
+        {
+          "call": "queries/Remaining",
+          "args": [
+            "$event"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 1
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$event",
+            1
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/Remaining",
+          "args": [
+            "$event"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "cancel and owner",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Show",
+            50,
+            3
+          ],
+          "system": true,
+          "save": "event",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$event",
+            1
+          ],
+          "as": "$ana",
+          "save": "purchase",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CancelPurchase",
+          "args": [
+            "$purchase"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "queries/PurchaseTotal",
+          "args": [
+            "$purchase"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 404,
+            "reason": "Denied"
+          }
+        },
+        {
+          "call": "rules/CancelPurchase",
+          "args": [
+            "$purchase"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/Remaining",
+          "args": [
+            "$event"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 3
+          }
+        },
+        {
+          "call": "rules/CancelPurchase",
+          "args": [
+            "$purchase"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "AlreadyCancelled"
+          }
+        }
+      ]
+    },
+    {
+      "name": "boundaries and missing",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Show",
+            50,
+            2
+          ],
+          "system": true,
+          "save": "event",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$event",
+            0
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$event",
+            11
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$event",
+            1
+          ],
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Show",
+            2,
+            2
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "queries/Remaining",
+          "args": [
+            "missing"
+          ],
+          "expect": {
+            "status": 404
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

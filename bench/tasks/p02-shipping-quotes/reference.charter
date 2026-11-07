@@ -1,0 +1,12 @@
+module shippingquotes@0.1.0
+
+type Zone = Text where it == "local" or it == "regional" or it == "remote"
+type Kilograms = Int where it >= 1 and it <= 30
+type Basket = Int where it >= 0
+
+fn zoneBase(zone: Text): Int =
+  if zone == "local" then 400 else if zone == "regional" then 800 else 1600
+
+query Shipping(zone: Zone, kilograms: Kilograms, express: Bool, basketCents: Basket): Int permit anyone =
+  if zone == "local" and not express and basketCents >= 5000 then 0
+  else zoneBase(zone) + 100 * kilograms + (if express then 600 else 0)

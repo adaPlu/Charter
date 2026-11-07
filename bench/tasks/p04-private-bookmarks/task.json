@@ -1,0 +1,367 @@
+{
+  "id": "p04-private-bookmarks",
+  "family": "F2",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers readers. A reader may save private bookmarks with nonblank titles of up to 80 characters and nonblank URLs of up to 200 characters. Each reader can rename or delete only their own bookmarks. Their bookmarks are sorted by title ascending then id. No one can see anyone else's bookmarks.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "AddBookmark",
+        "params": [
+          [
+            "title",
+            "Text"
+          ],
+          [
+            "url",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "registered caller",
+        "rejects": {
+          "ValidationError": "blank title/URL or too long"
+        }
+      },
+      {
+        "name": "RenameBookmark",
+        "params": [
+          [
+            "bookmark",
+            "Id"
+          ],
+          [
+            "title",
+            "Text"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "bookmark owner",
+        "rejects": {
+          "NotFound": "bookmark missing",
+          "Denied": "not owner",
+          "ValidationError": "title blank/too long"
+        }
+      },
+      {
+        "name": "DeleteBookmark",
+        "params": [
+          [
+            "bookmark",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "bookmark owner",
+        "rejects": {
+          "NotFound": "bookmark missing",
+          "Denied": "not owner"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "MyBookmarks",
+        "params": [],
+        "returns": "List of { id: Id, title: Text, url: Text }, sorted by title then id",
+        "who": "registered caller",
+        "rejects": {}
+      }
+    ]
+  },
+  "visibleTests": [
+    "add and sort"
+  ],
+  "tests": [
+    {
+      "name": "add and sort",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
+            "Docs",
+            "https://a"
+          ],
+          "as": "$ana",
+          "save": "docs",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
+            "Blog",
+            "https://b"
+          ],
+          "as": "$ana",
+          "save": "blog",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/MyBookmarks",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$blog",
+                "title": "Blog",
+                "url": "https://b"
+              },
+              {
+                "id": "$docs",
+                "title": "Docs",
+                "url": "https://a"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "rename and remove",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
+            "Home",
+            "https://home"
+          ],
+          "as": "$ana",
+          "save": "item",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/RenameBookmark",
+          "args": [
+            "$item",
+            "New"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/MyBookmarks",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$item",
+                "title": "New",
+                "url": "https://home"
+              }
+            ]
+          }
+        },
+        {
+          "call": "rules/DeleteBookmark",
+          "args": [
+            "$item"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/MyBookmarks",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "private data",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
+            "Mine",
+            "https://x"
+          ],
+          "as": "$ana",
+          "save": "item",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/MyBookmarks",
+          "args": [],
+          "as": "$ben",
+          "expect": {
+            "status": 200,
+            "value": []
+          }
+        },
+        {
+          "call": "rules/RenameBookmark",
+          "args": [
+            "$item",
+            "Hack"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/DeleteBookmark",
+          "args": [
+            "$item"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "queries/MyBookmarks",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "length": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad input",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
+            " ",
+            "https://a"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
+            "OK",
+            " "
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
+            "OK",
+            "https://a"
+          ],
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/DeleteBookmark",
+          "args": [
+            "missing"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 404
+          }
+        },
+        {
+          "call": "queries/MyBookmarks",
+          "args": [],
+          "expect": {
+            "status": 404
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

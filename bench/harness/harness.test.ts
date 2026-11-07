@@ -13,7 +13,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const run = (backend: string) => {
   const out = mkdtempSync(join(tmpdir(), "charter-bench-"));
   try {
-    const r = spawnSync(process.execPath, [join(root, "bench", "harness", "run.ts"), "--backend", backend, "--arms", "B,C", "--out", out], { encoding: "utf8", cwd: root, timeout: 300000 });
+    const r = spawnSync(process.execPath, [join(root, "bench", "harness", "run.ts"), "--backend", backend, "--arms", "B,C", "--tasks", "v1-notes,v2-wallet", "--out", out], { encoding: "utf8", cwd: root, timeout: 300000 });
     assert.equal(r.status, 0, r.stdout + r.stderr);
     return readFileSync(join(out, "runs.jsonl"), "utf8").trim().split("\n").map((l) => JSON.parse(l) as Record<string, unknown>);
   } finally { rmSync(out, { recursive: true, force: true }); }

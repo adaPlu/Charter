@@ -1,0 +1,26 @@
+module credit@0.1.0
+principal Person
+
+entity Person { name: Text, balance: Int where >= 0 = 0 }
+enum CreditError { InsufficientCredit }
+
+rule Register(name: Text where len(trim(it)) >= 1): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule Grant(customer: Person, cents: Int where it >= 1 and it <= 100000): Int
+  permit system
+  set customer.balance = customer.balance + cents
+  return customer.balance
+
+rule Spend(cents: Int where >= 1): Int rejects CreditError
+  permit anyone
+  let me = caller
+  guard me.balance >= cents else reject InsufficientCredit
+  set me.balance = me.balance - cents
+  return me.balance
+
+query Balance(): Int permit anyone = caller.balance
+
+invariant NeverNegative: Person.balance >= 0

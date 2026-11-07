@@ -39,6 +39,8 @@ interface Env {
   resultTy?: Ty;
   /** The principal entity, if the module declares one. */
   callerTy?: Ty;
+  /** True in a declaration with "permit public" (A26), where there may be no caller. */
+  publicDecl?: boolean;
   /** True inside a test's then clauses, where result, accepted, effects and old(...) mean something. */
   inThen?: boolean;
   /**
@@ -364,7 +366,9 @@ export function check(p: Program): CheckResult {
           case "effects":
             return env.inThen ? { k: "List", elem: { k: "Record", fields: [["cap", T.Text], ["args", { k: "List", elem: T.Unknown }]] } }
               : fail(e, `"effects" is only meaningful in a test's then clause`);
-          case "caller": return env.callerTy ?? fail(e, `"caller" needs a principal declaration, such as "principal User"`);
+          case "caller":
+            if (env.publicDecl) return fail(e, `"caller" is not available under "permit public", because the call may come from someone who is not signed in (amendment A26). Use "permit anyone" if only signed-in callers may call it.`);
+            return env.callerTy ?? fail(e, `"caller" needs a principal declaration, such as "principal User"`);
         }
         return T.Unknown;
       case "Old":
@@ -609,6 +613,7 @@ export function check(p: Program): CheckResult {
   const baseEnv = (decl: Decl): Env => {
     const env: Env = { decl: declKey(decl), vars: new Map(), facts: [], obligations: true, fieldTerms: new Map() };
     if (callerTy) { env.callerTy = callerTy; bindFacts(env, "caller", callerTy); }
+    if ((decl.kind === "Rule" || decl.kind === "Query") && decl.permit.mode === "public") env.publicDecl = true;
     return env;
   };
 

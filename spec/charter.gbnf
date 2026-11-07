@@ -1,4 +1,4 @@
-# Generated from spec/charter.ebnf (sha256 40d73c423d94deea…) by scripts/export-gbnf.mjs.
+# Generated from spec/charter.ebnf (sha256 51e08b259d49227b…) by scripts/export-gbnf.mjs.
 # Do not edit. Approximations: identifiers may be reserved words, and whitespace is required
 # after word-like tokens. See the comment at the top of scripts/export-gbnf.mjs.
 
@@ -28,7 +28,7 @@ params ::= param ( "," ws param )*
 param ::= ident-tok wsreq ":" ws type
 permission ::= "permission" wsreq ident-tok wsreq "(" ws ( params )? ")" ws "=" ws expr ( links )?
 rule ::= "rule" wsreq ident-tok wsreq "(" ws ( params )? ")" ws ( ":" ws type )? ( "rejects" wsreq ident-tok wsreq )? ( links )? permit ( clause )*
-permit ::= "permit" wsreq ( "anyone" wsreq | "system" wsreq | expr ) ( links )?
+permit ::= "permit" wsreq ( "anyone" wsreq | "public" wsreq | "system" wsreq | expr ) ( links )?
 clause ::= ( let-clause | guard-clause | set-clause | create-clause | delete-clause | for-clause | if-clause | emit-clause | raise-clause | return-clause ) ( links )?
 let-clause ::= "let" wsreq ident-tok wsreq "=" ws expr
 guard-clause ::= "guard" wsreq expr "else" wsreq "reject" wsreq ident-tok wsreq

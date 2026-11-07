@@ -1,0 +1,427 @@
+{
+  "id": "p18-review-moderation",
+  "family": "F5",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers reviewers. A registered reviewer posts 1–5 stars and a nonblank message up to 200 characters. Reviews begin pending. Only the operator may approve or reject a pending review; no second decision is allowed. Only approved reviews appear publicly, sorted by stars descending and message ascending. An author can delete any of their reviews, removing them from public view.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "PostReview",
+        "params": [
+          [
+            "stars",
+            "Int"
+          ],
+          [
+            "message",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "registered caller",
+        "rejects": {
+          "ValidationError": "stars not 1..5 or message blank/too long"
+        }
+      },
+      {
+        "name": "Moderate",
+        "params": [
+          [
+            "review",
+            "Id"
+          ],
+          [
+            "approve",
+            "Bool"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "operator only",
+        "rejects": {
+          "NotFound": "review missing",
+          "ValidationError": "approve not Bool",
+          "WrongState": "not pending"
+        }
+      },
+      {
+        "name": "DeleteReview",
+        "params": [
+          [
+            "review",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "review author",
+        "rejects": {
+          "NotFound": "review missing",
+          "Denied": "not author"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "PublicReviews",
+        "params": [],
+        "returns": "List of { stars: Int, message: Text }, sorted stars descending then message ascending",
+        "who": "anyone",
+        "rejects": {}
+      }
+    ]
+  },
+  "visibleTests": [
+    "approve review"
+  ],
+  "tests": [
+    {
+      "name": "approve review",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            5,
+            "Great"
+          ],
+          "as": "$ana",
+          "save": "review",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/PublicReviews",
+          "args": [],
+          "expect": {
+            "status": 200,
+            "value": []
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$review",
+            true
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/PublicReviews",
+          "args": [],
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "stars": 5,
+                "message": "Great"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "reject review",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            2,
+            "Bad"
+          ],
+          "as": "$ana",
+          "save": "review",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$review",
+            false
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$review",
+            true
+          ],
+          "system": true,
+          "expect": {
+            "status": 409,
+            "reason": "WrongState"
+          }
+        },
+        {
+          "call": "queries/PublicReviews",
+          "args": [],
+          "expect": {
+            "status": 200,
+            "value": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "order and delete",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            3,
+            "Okay"
+          ],
+          "as": "$ana",
+          "save": "r1",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            5,
+            "Zoo"
+          ],
+          "as": "$ana",
+          "save": "r2",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            5,
+            "Alpha"
+          ],
+          "as": "$ana",
+          "save": "r3",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$r1",
+            true
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$r2",
+            true
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$r3",
+            true
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/PublicReviews",
+          "args": [],
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "stars": 5,
+                "message": "Alpha"
+              },
+              {
+                "stars": 5,
+                "message": "Zoo"
+              },
+              {
+                "stars": 3,
+                "message": "Okay"
+              }
+            ]
+          }
+        },
+        {
+          "call": "rules/DeleteReview",
+          "args": [
+            "$r2"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/PublicReviews",
+          "args": [],
+          "expect": {
+            "status": 200,
+            "length": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "operator and owner only",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            0,
+            "Hi"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            4,
+            " "
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/PostReview",
+          "args": [
+            4,
+            "Hi"
+          ],
+          "as": "$ana",
+          "save": "review",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$review",
+            true
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Moderate",
+          "args": [
+            "$review",
+            "yes"
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/DeleteReview",
+          "args": [
+            "$review"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

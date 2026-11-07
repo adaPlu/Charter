@@ -1,0 +1,42 @@
+module courses@0.1.0
+principal Person
+
+// A query can only reject through its entity parameters (NotFound) or its permit (Denied, which
+// HTTP reports as 404 for queries). MyAnswer therefore folds "enrolled but no answer" into its
+// permit: the status is 404 as required, but the reason is Denied rather than NotFound.
+entity Person { name: Text }
+type Code = Text where len(trim(it)) >= 1
+type Answer = Text where len(trim(it)) >= 1 and len(it) <= 200
+entity Course { code: Code }
+entity Enrollment { course: Id<Course>, student: Id<Person> }
+entity Submission { course: Id<Course>, student: Id<Person>, answer: Answer }
+enum CourseError { AlreadyEnrolled, AlreadySubmitted }
+
+permission Enrolled(u: Person, c: Course) = exists e in Enrollment: e.course == c.id and e.student == u.id
+permission Answered(u: Person, c: Course) = exists s in Submission: s.course == c.id and s.student == u.id
+
+rule Register(name: Text): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule CreateClass(code: Code): Id<Course>
+  permit system
+  create Course { code = code } as c
+  return c.id
+
+rule Enroll(course: Course) rejects CourseError
+  permit anyone
+  guard not Enrolled(caller, course) else reject AlreadyEnrolled
+  create Enrollment { course = course.id, student = caller.id } as e
+
+rule Submit(course: Course, answer: Answer) rejects CourseError
+  permit Enrolled(caller, course)
+  guard not Answered(caller, course) else reject AlreadySubmitted
+  create Submission { course = course.id, student = caller.id, answer = answer } as sub
+
+query MyAnswer(course: Course): Text permit Enrolled(caller, course) and Answered(caller, course) =
+  (select s2.answer for s2 in Submission where s2.course == course.id and s2.student == caller.id)[0]
+
+query SubmissionCount(course: Course): Int permit system =
+  count s3 in Submission where s3.course == course.id

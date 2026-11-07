@@ -1,0 +1,41 @@
+module shipments@0.1.0
+principal Customer
+
+entity Customer { name: Text }
+enum ShipState { Created, Packed, Shipped, Delivered, Cancelled }
+enum ShipError { WrongState }
+type NextStep = Text where it == "packed" or it == "shipped" or it == "delivered"
+entity Shipment { customer: Id<Customer>, state: ShipState = Created }
+
+rule Register(name: Text): Id<Customer>
+  permit system
+  create Customer { name = name } as c
+  return c.id
+
+rule CreateShipment(customer: Customer): Id<Shipment>
+  permit system
+  create Shipment { customer = customer.id } as s
+  return s.id
+
+rule Advance(shipment: Shipment, next: NextStep) rejects ShipError
+  permit system
+  if next == "packed" {
+    guard shipment.state == Created else reject WrongState
+    set shipment.state = Packed
+  } else {
+    if next == "shipped" {
+      guard shipment.state == Packed else reject WrongState
+      set shipment.state = Shipped
+    } else {
+      guard shipment.state == Shipped else reject WrongState
+      set shipment.state = Delivered
+    }
+  }
+
+rule CancelShipment(shipment: Shipment) rejects ShipError
+  permit shipment.customer == caller.id
+  guard shipment.state == Created or shipment.state == Packed else reject WrongState
+  set shipment.state = Cancelled
+
+query Track(shipment: Shipment): Text permit shipment.customer == caller.id =
+  match shipment.state { Created => "created", Packed => "packed", Shipped => "shipped", Delivered => "delivered", Cancelled => "cancelled" }

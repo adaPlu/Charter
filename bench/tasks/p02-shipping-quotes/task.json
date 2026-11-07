@@ -1,0 +1,227 @@
+{
+  "id": "p02-shipping-quotes",
+  "family": "F1",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "A shipping calculator charges 400 cents for local parcels, 800 for regional, or 1600 for remote, plus 100 cents per kilogram. Parcels must weigh 1–30 whole kilograms. Express adds 600 cents. Standard local delivery is completely free when the basket subtotal reaches 5000 cents, but express local delivery is not free. Basket amounts must be nonnegative integers.",
+  "contract": {
+    "rules": [],
+    "queries": [
+      {
+        "name": "Shipping",
+        "params": [
+          [
+            "zone",
+            "Text"
+          ],
+          [
+            "kilograms",
+            "Int"
+          ],
+          [
+            "express",
+            "Bool"
+          ],
+          [
+            "basketCents",
+            "Int"
+          ]
+        ],
+        "returns": "Int: shipping charge",
+        "who": "anyone",
+        "rejects": {
+          "ValidationError": "zone must be local/regional/remote, weight 1..30, express Bool and basket nonnegative Int"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "ordinary quotes"
+  ],
+  "tests": [
+    {
+      "name": "ordinary quotes",
+      "steps": [
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            2,
+            false,
+            100
+          ],
+          "expect": {
+            "status": 200,
+            "value": 600
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "regional",
+            3,
+            false,
+            9000
+          ],
+          "expect": {
+            "status": 200,
+            "value": 1100
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "remote",
+            1,
+            true,
+            5000
+          ],
+          "expect": {
+            "status": 200,
+            "value": 2300
+          }
+        }
+      ]
+    },
+    {
+      "name": "free threshold",
+      "steps": [
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            30,
+            false,
+            5000
+          ],
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            1,
+            false,
+            4999
+          ],
+          "expect": {
+            "status": 200,
+            "value": 500
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            1,
+            true,
+            5000
+          ],
+          "expect": {
+            "status": 200,
+            "value": 1100
+          }
+        }
+      ]
+    },
+    {
+      "name": "boundaries",
+      "steps": [
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "regional",
+            30,
+            true,
+            0
+          ],
+          "expect": {
+            "status": 200,
+            "value": 4400
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "bad",
+            1,
+            false,
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            0,
+            false,
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            31,
+            false,
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad types",
+      "steps": [
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            1,
+            "false",
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            1,
+            false,
+            -1
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Shipping",
+          "args": [
+            "local",
+            1.5,
+            false,
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

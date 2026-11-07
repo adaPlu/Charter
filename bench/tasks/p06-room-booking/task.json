@@ -1,0 +1,427 @@
+{
+  "id": "p06-room-booking",
+  "family": "F2",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "A venue operator creates rooms with a nonblank name and capacity 1–100. Registered guests may book a room on a YYYY-MM-DD date in either the morning or afternoon slot. A room/date/slot can be booked only once. A guest may cancel only their own booking, which frees the slot. Guests see only their bookings, sorted by date, slot, then id. Dates need only have the stated character shape, not calendar validity.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "CreateRoom",
+        "params": [
+          [
+            "name",
+            "Text"
+          ],
+          [
+            "capacity",
+            "Int"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {
+          "ValidationError": "blank name or capacity not 1..100"
+        }
+      },
+      {
+        "name": "Book",
+        "params": [
+          [
+            "room",
+            "Id"
+          ],
+          [
+            "date",
+            "Text"
+          ],
+          [
+            "slot",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "registered caller",
+        "rejects": {
+          "NotFound": "room missing",
+          "ValidationError": "date not YYYY-MM-DD or slot not morning/afternoon",
+          "AlreadyBooked": "slot occupied"
+        }
+      },
+      {
+        "name": "Cancel",
+        "params": [
+          [
+            "booking",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "booking owner",
+        "rejects": {
+          "NotFound": "missing booking",
+          "Denied": "not owner"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "MyBookings",
+        "params": [],
+        "returns": "List of { id: Id, room: Id, date: Text, slot: Text }, sorted date, slot, id",
+        "who": "registered caller",
+        "rejects": {}
+      }
+    ]
+  },
+  "visibleTests": [
+    "book a slot"
+  ],
+  "tests": [
+    {
+      "name": "book a slot",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateRoom",
+          "args": [
+            "Hall",
+            20
+          ],
+          "system": true,
+          "save": "room",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-12-10",
+            "morning"
+          ],
+          "as": "$ana",
+          "save": "booking",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/MyBookings",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$booking",
+                "room": "$room",
+                "date": "2026-12-10",
+                "slot": "morning"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "collision and cancellation",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateRoom",
+          "args": [
+            "Hall",
+            10
+          ],
+          "system": true,
+          "save": "room",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-01",
+            "morning"
+          ],
+          "as": "$ana",
+          "save": "booking",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-01",
+            "morning"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 409,
+            "reason": "AlreadyBooked"
+          }
+        },
+        {
+          "call": "rules/Cancel",
+          "args": [
+            "$booking"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Cancel",
+          "args": [
+            "$booking"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-01",
+            "morning"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "other slots and privacy",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateRoom",
+          "args": [
+            "Hall",
+            10
+          ],
+          "system": true,
+          "save": "room",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-01",
+            "morning"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-01",
+            "afternoon"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/MyBookings",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "length": 1
+          }
+        },
+        {
+          "call": "queries/MyBookings",
+          "args": [],
+          "as": "$ben",
+          "expect": {
+            "status": 200,
+            "length": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad bookings",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateRoom",
+          "args": [
+            " ",
+            5
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/CreateRoom",
+          "args": [
+            "Hall",
+            0
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/CreateRoom",
+          "args": [
+            "Hall",
+            5
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "missing",
+            "2026-11-01",
+            "morning"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 404
+          }
+        },
+        {
+          "call": "rules/CreateRoom",
+          "args": [
+            "Hall",
+            5
+          ],
+          "system": true,
+          "save": "room",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "tomorrow",
+            "morning"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-01",
+            "night"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

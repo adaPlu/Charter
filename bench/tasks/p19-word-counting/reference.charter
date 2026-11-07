@@ -1,0 +1,17 @@
+// BLOCKED: Charter has no way to look inside a Text value. The only Text built-ins are len,
+// trim, lower, upper and contains; there is no character indexing (t[i] is rejected by the
+// type checker: "cannot index Text"), no substring, no split, no character code, no regex, no
+// iteration over Text (for/select/count only range over lists and entities), and no recursion
+// over a shrinking Text. So the program can neither split the passage into words to count
+// occurrences, nor check that the search term consists only of ASCII letters (it cannot reject
+// "two words" or "abc1"). Only the length checks are expressible.
+//
+// Best attempt: length validation plus a degenerate count that is right only when the whole
+// passage is exactly the word.
+module wordcount@0.1.0
+
+type Passage = Text where len(it) <= 1000
+type Term = Text where len(it) >= 1 and len(it) <= 20
+
+query CountWords(passage: Passage, word: Term): Int permit anyone =
+  if lower(passage) == lower(word) then 1 else 0

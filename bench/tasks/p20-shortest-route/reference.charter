@@ -1,0 +1,44 @@
+// BLOCKED: the contract requires the query Shortest to reject with NoRoute (status 409) when no
+// path exists, but a Charter query has no "rejects" clause (spec/charter.ebnf: query = "query"
+// ident "(" params ")" ":" type permit "=" expr). A query can only fail with ValidationError,
+// NotFound or Denied, so no Charter program can produce NoRoute from POST /queries/Shortest.
+// Everything else is expressible: the rule below keeps an all-pairs shortest-distance table up
+// to date incrementally on every AddRoad, and the query reads it. Missing routes return 0.
+//
+// The contract names the parameters "from" and "to"; "to" is a reserved word, so both are
+// renamed "src" and "dest" (arguments are positional).
+module routes@0.1.0
+
+type Town = Text where len(trim(it)) >= 1
+type Minutes = Int where it >= 1 and it <= 10000
+// Best known minutes from src to dest. Every town that has been seen has a row to itself with 0.
+entity Dist { src: Text, dest: Text, minutes: Int where >= 0 }
+
+rule AddRoad(src: Town, dest: Town, minutes: Minutes)
+  permit system
+  if not (exists d in Dist: d.src == src and d.dest == src) {
+    create Dist { src = src, dest = src, minutes = 0 }
+  }
+  if not (exists d2 in Dist: d2.src == dest and d2.dest == dest) {
+    create Dist { src = dest, dest = dest, minutes = 0 }
+  }
+  // Everything that reaches src, and everything dest reaches (including src and dest themselves).
+  let befores = select { town = b.src, minutes = b.minutes } for b in Dist where b.dest == src
+  let afters = select { town = a.dest, minutes = a.minutes } for a in Dist where a.src == dest
+  for x in befores {
+    for y in afters {
+      if x.town != y.town {
+        let cand = x.minutes + minutes + y.minutes
+        let found = select e for e in Dist where e.src == x.town and e.dest == y.town
+        if len(found) > 0 {
+          let old1 = found[0]
+          set old1.minutes = min(old1.minutes, cand)
+        } else {
+          create Dist { src = x.town, dest = y.town, minutes = cand }
+        }
+      }
+    }
+  }
+
+query Shortest(src: Town, dest: Town): Int permit anyone =
+  if src == dest then 0 else sum r.minutes for r in Dist where r.src == src and r.dest == dest

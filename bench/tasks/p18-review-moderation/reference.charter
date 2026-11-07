@@ -1,0 +1,33 @@
+// PublicReviews is public (amendment A26): visitors who are not signed in may read approved reviews.
+module reviews@0.1.0
+principal Reviewer
+
+entity Reviewer { name: Text }
+enum ReviewState { Pending, Approved, Rejected }
+enum ReviewError { WrongState }
+type Stars = Int where it >= 1 and it <= 5
+type Message = Text where len(trim(it)) >= 1 and len(it) <= 200
+entity Review { author: Id<Reviewer>, stars: Stars, message: Message, state: ReviewState = Pending }
+type ReviewView = { stars: Int, message: Text }
+
+rule Register(name: Text): Id<Reviewer>
+  permit system
+  create Reviewer { name = name } as r
+  return r.id
+
+rule PostReview(stars: Stars, message: Message): Id<Review>
+  permit anyone
+  create Review { author = caller.id, stars = stars, message = message } as rv
+  return rv.id
+
+rule Moderate(review: Review, approve: Bool) rejects ReviewError
+  permit system
+  guard review.state == Pending else reject WrongState
+  set review.state = if approve then Approved else Rejected
+
+rule DeleteReview(review: Review)
+  permit review.author == caller.id
+  delete review
+
+query PublicReviews(): List<ReviewView> permit public =
+  select { stars = r.stars, message = r.message } for r in Review where r.state == Approved order by 0 - r.stars, r.message

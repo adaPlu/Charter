@@ -1,0 +1,369 @@
+{
+  "id": "p07-habit-tracker",
+  "family": "F2",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers people. A person creates habits with nonblank names no longer than 40 characters. They can log a completed day in YYYY-MM-DD form at most once per habit, and erase a logged day. Removing a day that was never logged is NotFound. The owner sees only their own habits and their count of distinct completed days, sorted by name then id. Dates only require the stated shape.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "CreateHabit",
+        "params": [
+          [
+            "title",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "registered caller",
+        "rejects": {
+          "ValidationError": "title blank or longer than 40"
+        }
+      },
+      {
+        "name": "LogDay",
+        "params": [
+          [
+            "habit",
+            "Id"
+          ],
+          [
+            "day",
+            "Text"
+          ]
+        ],
+        "returns": "Int: number of completed days",
+        "who": "owner",
+        "rejects": {
+          "NotFound": "missing habit",
+          "Denied": "not owner",
+          "ValidationError": "date not YYYY-MM-DD",
+          "AlreadyLogged": "day already logged"
+        }
+      },
+      {
+        "name": "UnlogDay",
+        "params": [
+          [
+            "habit",
+            "Id"
+          ],
+          [
+            "day",
+            "Text"
+          ]
+        ],
+        "returns": "Int: number of completed days",
+        "who": "owner",
+        "rejects": {
+          "NotFound": "habit missing or day not logged",
+          "Denied": "not owner"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "MyHabits",
+        "params": [],
+        "returns": "List of { id: Id, title: Text, days: Int }, sorted title then id",
+        "who": "registered caller",
+        "rejects": {}
+      }
+    ]
+  },
+  "visibleTests": [
+    "log progress"
+  ],
+  "tests": [
+    {
+      "name": "log progress",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateHabit",
+          "args": [
+            "Run"
+          ],
+          "as": "$ana",
+          "save": "habit",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/LogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 1
+          }
+        },
+        {
+          "call": "rules/LogDay",
+          "args": [
+            "$habit",
+            "2026-11-02"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 2
+          }
+        },
+        {
+          "call": "queries/MyHabits",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$habit",
+                "title": "Run",
+                "days": 2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate and remove",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateHabit",
+          "args": [
+            "Read"
+          ],
+          "as": "$ana",
+          "save": "habit",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/LogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 1
+          }
+        },
+        {
+          "call": "rules/LogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "AlreadyLogged"
+          }
+        },
+        {
+          "call": "rules/UnlogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        },
+        {
+          "call": "rules/UnlogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 404
+          }
+        }
+      ]
+    },
+    {
+      "name": "other people",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateHabit",
+          "args": [
+            "Write"
+          ],
+          "as": "$ana",
+          "save": "habit",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/LogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/UnlogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "queries/MyHabits",
+          "args": [],
+          "as": "$ben",
+          "expect": {
+            "status": 200,
+            "value": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid calls",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateHabit",
+          "args": [
+            " "
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/CreateHabit",
+          "args": [
+            "Read"
+          ],
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/CreateHabit",
+          "args": [
+            "Read"
+          ],
+          "as": "$ana",
+          "save": "habit",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/LogDay",
+          "args": [
+            "$habit",
+            "11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/LogDay",
+          "args": [
+            "missing",
+            "2026-11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 404
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

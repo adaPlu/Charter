@@ -1,6 +1,6 @@
 {
   "version": "0.1",
-  "sha256": "40d73c423d94deea1ba97fdd64f4bc0ca5dafd95544f474f102f57fa87efdb0e",
+  "sha256": "51e08b259d49227b640af3c914d85e8fbab81c7db4278f6fcbaefbb04ea94c0c",
   "productions": 83,
   "syntacticRules": 74,
   "tokenClasses": 7,
@@ -74,6 +74,7 @@
     "permitted",
     "principal",
     "property",
+    "public",
     "query",
     "raise",
     "reject",
@@ -142,6 +143,7 @@
     "A19",
     "A20",
     "A22",
-    "A23"
+    "A23",
+    "A26"
   ]
 }

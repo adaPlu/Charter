@@ -1,0 +1,23 @@
+module finalgrades@0.1.0
+
+type Score = Int where it >= 0 and it <= 100
+// The element refinement on Score is not enforced for list parameters by the current toolchain,
+// so the range is also stated on the list itself.
+type Scores = List<Score> where len(it) >= 1 and len(it) <= 5 and (forall s in it: s >= 0 and s <= 100)
+type Bonus = Int where it >= 0 and it <= 10
+type GradeView = { score: Int, passed: Bool }
+
+// The lowest score: the sum of all scores equal to the minimum, divided by how many there are.
+fn lowest(scores: List<Int>): Int =
+  if (count s in scores where forall t in scores: s <= t) == 0 then 0
+  else (sum s for s in scores where forall t in scores: s <= t) / (count s in scores where forall t in scores: s <= t)
+
+fn average(scores: List<Int>): Int =
+  if len(scores) >= 3 then ((sum s for s in scores) - lowest(scores)) / (len(scores) - 1)
+  else if len(scores) == 0 then 0
+  else (sum s for s in scores) / len(scores)
+
+fn grade(scores: List<Int>, bonus: Int): Int = min(100, average(scores) + bonus)
+
+query FinalGrade(scores: Scores, bonus: Bonus): GradeView permit anyone =
+  { score = grade(scores, bonus), passed = grade(scores, bonus) >= 70 }

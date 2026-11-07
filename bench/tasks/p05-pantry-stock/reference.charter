@@ -1,0 +1,39 @@
+module pantry@0.1.0
+principal Household
+
+entity Household { name: Text }
+type ItemName = Text where len(trim(it)) >= 1 and len(it) <= 50
+type Units = Int where it >= 1 and it <= 100
+entity Item { owner: Id<Household>, name: ItemName, quantity: Int where >= 0 }
+type StockView = { id: Id<Item>, name: Text, quantity: Int }
+enum AddError { DuplicateName }
+enum ConsumeError { InsufficientStock }
+
+permission Owns(h: Household, i: Item) = i.owner == h.id
+
+rule Register(name: Text): Id<Household>
+  permit system
+  create Household { name = name } as h
+  return h.id
+
+rule AddItem(name: ItemName, quantity: Units): Id<Item> rejects AddError
+  permit anyone
+  guard not (exists x in Item: x.owner == caller.id and x.name == name) else reject DuplicateName
+  create Item { owner = caller.id, name = name, quantity = quantity } as i
+  return i.id
+
+rule Restock(item: Item, quantity: Units): Int
+  permit Owns(caller, item)
+  set item.quantity = item.quantity + quantity
+  return item.quantity
+
+rule Consume(item: Item, quantity: Int where >= 1): Int rejects ConsumeError
+  permit Owns(caller, item)
+  guard item.quantity >= quantity else reject InsufficientStock
+  set item.quantity = item.quantity - quantity
+  return item.quantity
+
+query MyStock(): List<StockView> permit anyone =
+  select { id = i.id, name = i.name, quantity = i.quantity } for i in Item where i.owner == caller.id order by i.name, i.id
+
+invariant StockNeverNegative: Item.quantity >= 0

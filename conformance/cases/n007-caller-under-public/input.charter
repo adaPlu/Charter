@@ -1,0 +1,7 @@
+// Amendment A26: under "permit public" there may be no caller, so "caller" is a type error.
+module pub@0.1.0
+principal User
+entity User { name: Text }
+
+query Greeting(): Text permit public =
+  caller.name

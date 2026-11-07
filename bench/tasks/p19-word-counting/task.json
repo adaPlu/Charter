@@ -1,0 +1,173 @@
+{
+  "id": "p19-word-counting",
+  "family": "F6",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "A public tool counts occurrences of a word in a passage. Case does not matter. A word is a maximal run of ASCII letters A through Z; digits, punctuation, spaces and non-ASCII characters separate words. The search term must consist of 1–20 ASCII letters; passage length cannot exceed 1000 characters. Partial words do not count.",
+  "contract": {
+    "rules": [],
+    "queries": [
+      {
+        "name": "CountWords",
+        "params": [
+          [
+            "passage",
+            "Text"
+          ],
+          [
+            "word",
+            "Text"
+          ]
+        ],
+        "returns": "Int: occurrences",
+        "who": "anyone",
+        "rejects": {
+          "ValidationError": "passage longer than 1000 or search term not 1–20 ASCII letters"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "basic counting"
+  ],
+  "tests": [
+    {
+      "name": "basic counting",
+      "steps": [
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "Cat cat, scatter CAT!",
+            "cat"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 3
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "Nothing relevant",
+            "cat"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "separators",
+      "steps": [
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "a1a a-a a_a",
+            "a"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 6
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "hellohelloworld hello",
+            "hello"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 1
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "éHELLOé hello",
+            "hello"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty and case",
+      "steps": [
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "",
+            "hello"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "Mix MIX mix",
+            "mIx"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid terms",
+      "steps": [
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "sample",
+            ""
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "sample",
+            "two words"
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "sample",
+            "abc1"
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "sample",
+            "abcdefghijklmnopqrstu"
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

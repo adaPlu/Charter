@@ -174,3 +174,23 @@ rule Record(n: Note) permit system
   assert.equal(show(i.evalClosed(parseExpr("select l.line for l in Log"))), '["noted hi"]');
   assert.deepEqual(i.replay().mismatches, []);
 });
+
+test("nested refinements are enforced on inputs: list elements, record fields, optional named types", () => {
+  // Found by writing a reference for pilot task p03: a score of 101 inside List<Score> was accepted.
+  const i = run(`module nested@0.1.0
+type Score = Int where it >= 0 and it <= 100
+query A(xs: List<Int where it >= 0 and it <= 100>): Int permit anyone = len(xs)
+query B(xs: List<Score>): Int permit anyone = len(xs)
+query C(x: Score?): Int permit anyone = 1
+query D(r: {n: Score}): Int permit anyone = 1
+`);
+  const q = (name: string, a: string) => showOutcome(i.callQuery(name, [arg(i, a)]));
+  assert.equal(q("A", "[101]"), "Rejected  ValidationError(xs)");
+  assert.equal(q("A", "[5]"), "Ok  1");
+  assert.equal(q("B", "[3, -1]"), "Rejected  ValidationError(xs)");
+  assert.equal(q("B", "[3, 4]"), "Ok  2");
+  assert.equal(q("C", "101"), "Rejected  ValidationError(x)");
+  assert.equal(q("C", "none"), "Ok  1");
+  assert.equal(q("D", "{n = 101}"), "Rejected  ValidationError(r)");
+  assert.equal(q("D", "{n = 1}"), "Ok  1");
+});

@@ -1,0 +1,43 @@
+module habits@0.1.0
+principal Person
+
+// Charter has no way to read single characters of Text (no indexing, substring or regex),
+// so the YYYY-MM-DD shape is approximated: ten characters, starting with a digit, containing "-".
+entity Person { name: Text }
+type HabitTitle = Text where len(trim(it)) >= 1 and len(it) <= 40
+type DayText = Text where len(it) == 10 and it >= "0" and it < ":" and contains(it, "-")
+entity Habit { owner: Id<Person>, title: HabitTitle }
+entity Done { habit: Id<Habit>, day: Text }
+enum HabitError { AlreadyLogged, NotFound }
+type HabitView = { id: Id<Habit>, title: Text, days: Int }
+
+permission OwnsHabit(u: Person, h: Habit) = h.owner == u.id
+
+rule Register(name: Text): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule CreateHabit(title: HabitTitle): Id<Habit>
+  permit anyone
+  create Habit { owner = caller.id, title = title } as h
+  return h.id
+
+rule LogDay(habit: Habit, day: DayText): Int rejects HabitError
+  permit OwnsHabit(caller, habit)
+  guard not (exists d in Done: d.habit == habit.id and d.day == day) else reject AlreadyLogged
+  create Done { habit = habit.id, day = day } as entry
+  return count d2 in Done where d2.habit == habit.id
+
+rule UnlogDay(habit: Habit, day: Text): Int rejects HabitError
+  permit OwnsHabit(caller, habit)
+  guard exists d in Done: d.habit == habit.id and d.day == day else reject NotFound
+  for d3 in Done {
+    if d3.habit == habit.id and d3.day == day {
+      delete d3
+    }
+  }
+  return count d4 in Done where d4.habit == habit.id
+
+query MyHabits(): List<HabitView> permit anyone =
+  select { id = h.id, title = h.title, days = count d5 in Done where d5.habit == h.id } for h in Habit where h.owner == caller.id order by h.title, h.id

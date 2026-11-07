@@ -67,7 +67,7 @@ permission   = "permission" ident "(" [ params ] ")" "=" expr [ links ] ;
    belongs to its last clause. *)
 rule         = "rule" ident "(" [ params ] ")" [ ":" type ] [ "rejects" ident ] [ links ]
                permit { clause } ;
-permit       = "permit" ( "anyone" | "system" | expr ) [ links ] ;      (* "system": A9 *)
+permit       = "permit" ( "anyone" | "public" | "system" | expr ) [ links ] ;   (* "system": A9; "public": A26 *)
 clause       = ( let_clause | guard_clause | set_clause | create_clause | delete_clause
                | for_clause | if_clause | emit_clause | raise_clause | return_clause ) [ links ] ;
 let_clause    = "let" ident "=" expr ;

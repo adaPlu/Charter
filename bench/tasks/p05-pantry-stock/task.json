@@ -1,0 +1,391 @@
+{
+  "id": "p05-pantry-stock",
+  "family": "F2",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers households. A household creates pantry items with a nonblank name up to 50 characters and 1–100 units. Names must be unique within each household, not across households. The owner may restock by 1–100 units, or consume 1 or more up to the available quantity. Zero-stock items remain listed. Rejected operations never change stock. Each household sees its own items sorted by name then id.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "AddItem",
+        "params": [
+          [
+            "name",
+            "Text"
+          ],
+          [
+            "quantity",
+            "Int"
+          ]
+        ],
+        "returns": "Id",
+        "who": "registered caller",
+        "rejects": {
+          "ValidationError": "bad name or quantity not 1..100",
+          "DuplicateName": "name already used by household"
+        }
+      },
+      {
+        "name": "Restock",
+        "params": [
+          [
+            "item",
+            "Id"
+          ],
+          [
+            "quantity",
+            "Int"
+          ]
+        ],
+        "returns": "Int: new stock",
+        "who": "owner",
+        "rejects": {
+          "NotFound": "missing item",
+          "Denied": "other household",
+          "ValidationError": "quantity not 1..100"
+        }
+      },
+      {
+        "name": "Consume",
+        "params": [
+          [
+            "item",
+            "Id"
+          ],
+          [
+            "quantity",
+            "Int"
+          ]
+        ],
+        "returns": "Int: remaining stock",
+        "who": "owner",
+        "rejects": {
+          "NotFound": "missing item",
+          "Denied": "other household",
+          "ValidationError": "quantity below 1",
+          "InsufficientStock": "requested amount exceeds stock"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "MyStock",
+        "params": [],
+        "returns": "List of { id: Id, name: Text, quantity: Int }, ordered by name then id",
+        "who": "registered caller",
+        "rejects": {}
+      }
+    ]
+  },
+  "visibleTests": [
+    "stock and consumption"
+  ],
+  "tests": [
+    {
+      "name": "stock and consumption",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "Rice",
+            5
+          ],
+          "as": "$ana",
+          "save": "rice",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Consume",
+          "args": [
+            "$rice",
+            2
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 3
+          }
+        },
+        {
+          "call": "rules/Restock",
+          "args": [
+            "$rice",
+            4
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 7
+          }
+        },
+        {
+          "call": "queries/MyStock",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$rice",
+                "name": "Rice",
+                "quantity": 7
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "zero persists",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "Beans",
+            1
+          ],
+          "as": "$ana",
+          "save": "beans",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Consume",
+          "args": [
+            "$beans",
+            1
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        },
+        {
+          "call": "queries/MyStock",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$beans",
+                "name": "Beans",
+                "quantity": 0
+              }
+            ]
+          }
+        },
+        {
+          "call": "rules/Consume",
+          "args": [
+            "$beans",
+            1
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "InsufficientStock"
+          }
+        }
+      ]
+    },
+    {
+      "name": "names and privacy",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "Salt",
+            2
+          ],
+          "as": "$ana",
+          "save": "salt",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "Salt",
+            3
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "Salt",
+            2
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "DuplicateName"
+          }
+        },
+        {
+          "call": "rules/Consume",
+          "args": [
+            "$salt",
+            1
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "queries/MyStock",
+          "args": [],
+          "as": "$ben",
+          "expect": {
+            "status": 200,
+            "length": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "rejected calls change nothing",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "Flour",
+            5
+          ],
+          "as": "$ana",
+          "save": "item",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Consume",
+          "args": [
+            "$item",
+            6
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "InsufficientStock"
+          }
+        },
+        {
+          "call": "rules/Restock",
+          "args": [
+            "$item",
+            0
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/Consume",
+          "args": [
+            "$item",
+            0
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/MyStock",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$item",
+                "name": "Flour",
+                "quantity": 5
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

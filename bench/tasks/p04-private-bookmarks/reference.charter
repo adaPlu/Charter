@@ -1,0 +1,31 @@
+module bookmarks@0.1.0
+principal Reader
+
+entity Reader { name: Text }
+type Title = Text where len(trim(it)) >= 1 and len(it) <= 80
+type Url = Text where len(trim(it)) >= 1 and len(it) <= 200
+entity Bookmark { owner: Id<Reader>, title: Title, url: Url }
+type BookmarkView = { id: Id<Bookmark>, title: Text, url: Text }
+
+permission Owns(r: Reader, b: Bookmark) = b.owner == r.id
+
+rule Register(name: Text): Id<Reader>
+  permit system
+  create Reader { name = name } as r
+  return r.id
+
+rule AddBookmark(title: Title, url: Url): Id<Bookmark>
+  permit anyone
+  create Bookmark { owner = caller.id, title = title, url = url } as b
+  return b.id
+
+rule RenameBookmark(bookmark: Bookmark, title: Title)
+  permit Owns(caller, bookmark)
+  set bookmark.title = title
+
+rule DeleteBookmark(bookmark: Bookmark)
+  permit Owns(caller, bookmark)
+  delete bookmark
+
+query MyBookmarks(): List<BookmarkView> permit anyone =
+  select { id = b.id, title = b.title, url = b.url } for b in Bookmark where b.owner == caller.id order by b.title, b.id

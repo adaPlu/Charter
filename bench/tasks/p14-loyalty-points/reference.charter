@@ -1,0 +1,37 @@
+module loyalty@0.1.0
+principal Person
+
+entity Person { name: Text, points: Int where >= 0 = 0 }
+enum PointsError { SelfTransfer, InsufficientPoints }
+
+rule Register(name: Text where len(trim(it)) >= 1): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule Earn(points: Int where it >= 1 and it <= 1000): Int
+  permit anyone
+  let me = caller
+  set me.points = me.points + points
+  return me.points
+
+// The contract calls the first argument "to", a Charter reserved word; it is "recipient" here.
+rule Transfer(recipient: Person, points: Int where >= 1): Int rejects PointsError
+  permit anyone
+  let me = caller
+  guard recipient.id != me.id else reject SelfTransfer
+  guard me.points >= points else reject InsufficientPoints
+  set me.points = me.points - points
+  set recipient.points = recipient.points + points
+  return me.points
+
+rule Redeem(points: Int where >= 1): Int rejects PointsError
+  permit anyone
+  let me = caller
+  guard me.points >= points else reject InsufficientPoints
+  set me.points = me.points - points
+  return me.points
+
+query Points(): Int permit anyone = caller.points
+
+invariant NeverNegative: Person.points >= 0

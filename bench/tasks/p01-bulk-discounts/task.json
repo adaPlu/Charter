@@ -1,0 +1,210 @@
+{
+  "id": "p01-bulk-discounts",
+  "family": "F1",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "A store quotes orders in whole cents. Quantity must be 1–50 and price per unit 1–100000 cents. Orders of at least 10 units earn 10% off the subtotal (round down). Members then earn an additional 5% off the discounted subtotal (round down). Everyone can request a quote; invalid inputs are rejected.",
+  "contract": {
+    "rules": [],
+    "queries": [
+      {
+        "name": "Quote",
+        "params": [
+          [
+            "quantity",
+            "Int"
+          ],
+          [
+            "unitCents",
+            "Int"
+          ],
+          [
+            "member",
+            "Bool"
+          ]
+        ],
+        "returns": "Int: total cents",
+        "who": "anyone",
+        "rejects": {
+          "ValidationError": "quantity, price or member outside stated types/ranges"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "ordinary order"
+  ],
+  "tests": [
+    {
+      "name": "ordinary order",
+      "steps": [
+        {
+          "call": "queries/Quote",
+          "args": [
+            2,
+            250,
+            false
+          ],
+          "expect": {
+            "status": 200,
+            "value": 500
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            10,
+            101,
+            false
+          ],
+          "expect": {
+            "status": 200,
+            "value": 909
+          }
+        }
+      ]
+    },
+    {
+      "name": "members and rounding",
+      "steps": [
+        {
+          "call": "queries/Quote",
+          "args": [
+            10,
+            101,
+            true
+          ],
+          "expect": {
+            "status": 200,
+            "value": 864
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            9,
+            101,
+            true
+          ],
+          "expect": {
+            "status": 200,
+            "value": 864
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            50,
+            1,
+            true
+          ],
+          "expect": {
+            "status": 200,
+            "value": 43
+          }
+        }
+      ]
+    },
+    {
+      "name": "boundaries",
+      "steps": [
+        {
+          "call": "queries/Quote",
+          "args": [
+            1,
+            1,
+            false
+          ],
+          "expect": {
+            "status": 200,
+            "value": 1
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            50,
+            100000,
+            false
+          ],
+          "expect": {
+            "status": 200,
+            "value": 4500000
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            0,
+            50,
+            false
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            51,
+            50,
+            false
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid values",
+      "steps": [
+        {
+          "call": "queries/Quote",
+          "args": [
+            1,
+            0,
+            false
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            1,
+            100001,
+            false
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            1.2,
+            10,
+            true
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Quote",
+          "args": [
+            1,
+            10,
+            "yes"
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

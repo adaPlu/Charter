@@ -1,0 +1,9 @@
+{
+  "title": "caller is not available under permit public",
+  "source": "Amendment A26",
+  "covers": ["A26"],
+  "expect": {
+    "parse": "ok",
+    "check": { "errors": [{ "code": "CH0201", "line": 7 }] }
+  }
+}

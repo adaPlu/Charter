@@ -1,0 +1,402 @@
+{
+  "id": "p17-shipment-workflow",
+  "family": "F5",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers customers and creates shipments for them. Each shipment starts created. Only the operator advances one step at a time: created to packed, packed to shipped, shipped to delivered. Skips, repeats or transitions after cancellation are WrongState. The customer may cancel only in created or packed state. Only the owner can track their shipment.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "CreateShipment",
+        "params": [
+          [
+            "customer",
+            "Id"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {
+          "NotFound": "customer missing"
+        }
+      },
+      {
+        "name": "Advance",
+        "params": [
+          [
+            "shipment",
+            "Id"
+          ],
+          [
+            "next",
+            "Text"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "operator only",
+        "rejects": {
+          "NotFound": "shipment missing",
+          "ValidationError": "next not packed/shipped/delivered",
+          "WrongState": "illegal transition"
+        }
+      },
+      {
+        "name": "CancelShipment",
+        "params": [
+          [
+            "shipment",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "shipment customer",
+        "rejects": {
+          "NotFound": "shipment missing",
+          "Denied": "not owner",
+          "WrongState": "already shipped, delivered or cancelled"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "Track",
+        "params": [
+          [
+            "shipment",
+            "Id"
+          ]
+        ],
+        "returns": "Text: current state",
+        "who": "shipment customer",
+        "rejects": {
+          "NotFound": "shipment missing",
+          "Denied": "not owner"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "complete shipment"
+  ],
+  "tests": [
+    {
+      "name": "complete shipment",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateShipment",
+          "args": [
+            "$ana"
+          ],
+          "system": true,
+          "save": "ship",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "packed"
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "shipped"
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "delivered"
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/Track",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": "delivered"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cannot skip state",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateShipment",
+          "args": [
+            "$ana"
+          ],
+          "system": true,
+          "save": "ship",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "shipped"
+          ],
+          "system": true,
+          "expect": {
+            "status": 409,
+            "reason": "WrongState"
+          }
+        },
+        {
+          "call": "queries/Track",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": "created"
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "packed"
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "packed"
+          ],
+          "system": true,
+          "expect": {
+            "status": 409,
+            "reason": "WrongState"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cancellation stops progress",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateShipment",
+          "args": [
+            "$ana"
+          ],
+          "system": true,
+          "save": "ship",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "packed"
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CancelShipment",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "shipped"
+          ],
+          "system": true,
+          "expect": {
+            "status": 409,
+            "reason": "WrongState"
+          }
+        },
+        {
+          "call": "queries/Track",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": "cancelled"
+          }
+        }
+      ]
+    },
+    {
+      "name": "privacy and bad input",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/CreateShipment",
+          "args": [
+            "$ana"
+          ],
+          "system": true,
+          "save": "ship",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/Track",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 404,
+            "reason": "Denied"
+          }
+        },
+        {
+          "call": "rules/CancelShipment",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "packed"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Advance",
+          "args": [
+            "$ship",
+            "lost"
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/CreateShipment",
+          "args": [
+            "missing"
+          ],
+          "system": true,
+          "expect": {
+            "status": 404
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

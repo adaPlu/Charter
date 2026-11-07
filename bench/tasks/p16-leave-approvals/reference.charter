@@ -1,0 +1,37 @@
+module leave@0.1.0
+principal Worker
+
+entity Worker { name: Text }
+enum LeaveState { Pending, Approved, Rejected, Withdrawn }
+enum LeaveError { WrongState }
+type Days = Int where it >= 1 and it <= 14
+type Reason = Text where len(trim(it)) >= 1 and len(it) <= 200
+entity LeaveRequest { owner: Id<Worker>, days: Days, reason: Reason, state: LeaveState = Pending }
+
+rule Register(name: Text): Id<Worker>
+  permit system
+  create Worker { name = name } as w
+  return w.id
+
+rule RequestLeave(days: Days, reason: Reason): Id<LeaveRequest>
+  permit anyone
+  create LeaveRequest { owner = caller.id, days = days, reason = reason } as r
+  return r.id
+
+rule Approve(request: LeaveRequest) rejects LeaveError
+  permit system
+  guard request.state == Pending else reject WrongState
+  set request.state = Approved
+
+rule RejectLeave(request: LeaveRequest) rejects LeaveError
+  permit system
+  guard request.state == Pending else reject WrongState
+  set request.state = Rejected
+
+rule Withdraw(request: LeaveRequest) rejects LeaveError
+  permit request.owner == caller.id
+  guard request.state == Pending else reject WrongState
+  set request.state = Withdrawn
+
+query LeaveStatus(request: LeaveRequest): Text permit request.owner == caller.id =
+  match request.state { Pending => "pending", Approved => "approved", Rejected => "rejected", Withdrawn => "withdrawn" }

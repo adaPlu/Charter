@@ -115,10 +115,10 @@ That runs the layer rule, the grammar freeze, the conformance corpus, the GBNF e
 
 | Item | Value |
 |---|---|
-| Grammar productions | 83, of which 74 are syntactic, all exercised by the corpus. Frozen for the pilot. |
-| Conformance cases | 16 |
-| Tests | 92, including about 1,900 fuzzed programs and expressions per run, and the to-do app tested over HTTP |
-| Amendments | A1 to A25. The 21 due by milestone 2 are covered by conformance cases. |
+| Grammar productions | 83, of which 74 are syntactic, all exercised by the corpus. Frozen for the pilot; reopened once, for A26, before any model run. |
+| Conformance cases | 18 |
+| Tests | 98, including about 1,900 fuzzed programs and expressions per run, and the to-do app tested over HTTP |
+| Amendments | A1 to A26. The 22 due by milestone 2 are covered by conformance cases. |
 
 ## What milestone 1 delivered
 

@@ -2,7 +2,7 @@
 
 Every change to the language after the Phase 2 specification is listed here and in [amendments.json](amendments.json). Grammar amendments must have at least one conformance case before they land. Other amendments must have one by the milestone shown. `scripts/check-conformance.mjs` enforces both rules.
 
-A1 to A13 came from the design phases. A14 to A20 came from milestone 0, while checking the Phase 5 examples against the merged grammar. A21 came from milestone 1, when the calculator's tests first ran. A22 to A25 settle the open questions that the design doc, section 8.6, assigned to milestone 2. With them the grammar is frozen for the H1 pilot.
+A1 to A13 came from the design phases. A14 to A20 came from milestone 0, while checking the Phase 5 examples against the merged grammar. A21 came from milestone 1, when the calculator's tests first ran. A22 to A25 settle the open questions that the design doc, section 8.6, assigned to milestone 2. With them the grammar is frozen for the H1 pilot. A26 reopened the freeze once, before any model run, because two draft pilot tasks showed that a program with users could not offer a public query.
 
 Two other milestone 2 questions were decided without an amendment. Invariants that compare two states, with `old(…)`, are deferred until after the MVP, and properties cover those cases meanwhile. Money rounding stays one program-wide rule, half to even, recorded as an `inferred` default that a person must confirm.
 
@@ -33,3 +33,4 @@ Two other milestone 2 questions were decided without an amendment. Invariants th
 | A23 | grammar | M2 | In a test's `then` clauses, `accepted` is `true` when the act's outcome was `ok`. Phase 5, example 3 needed `result == ok`, which could not be written. |
 | A24 | semantics | M2 | After a check such as `if pl != none`, a binding of type `E?` narrows to `E`, and `set pl.f = …` is allowed. Phase 5, example 5 needed this. |
 | A25 | semantics | M2 | A query whose result type is an entity, or contains one, gets a warning (`CH0230`). It returns every field, including ones the caller may not be meant to see. Return a view record instead. This settles field-level read control for the MVP without new syntax. |
+| A26 | grammar | M2 | `permit public` admits every caller, including one who is not signed in. Under a `principal`, `permit anyone` means any signed-in caller, so before A26 a program with users could not offer a public page. `caller` is a type error inside a `permit public` declaration. Found by the H1 pilot draft tasks p13 and p18, before any model run. It adds one reserved word, `public`. |

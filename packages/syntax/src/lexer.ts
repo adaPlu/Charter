@@ -15,7 +15,7 @@ export const RESERVED: ReadonlySet<string> = new Set([
   "exists", "expect", "extern", "false", "fn", "for", "forall", "given", "guard", "if", "implies",
   "import", "in", "inferred", "invariant", "it", "let", "match", "migration", "module", "none", "not",
   "now", "ok", "old", "on", "open", "or", "order", "permission", "permit", "permitted", "principal",
-  "property", "query", "raise", "reject", "rejects", "rename", "req", "requirement", "result",
+  "property", "public", "query", "raise", "reject", "rejects", "rename", "req", "requirement", "result",
   "return", "rule", "select", "set", "succeeds", "sum", "system", "test", "then", "to", "true", "type",
   "uses", "when", "where",
 ]);

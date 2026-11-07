@@ -15,7 +15,7 @@
 // Milestone 2 scope: effects are queued in the outbox but not dispatched, so confirm and
 // compensate blocks do not run yet (milestone 4). Extern functions are bound in milestone 5.
 import { createHash, randomBytes } from "node:crypto";
-import type { Program, Expr, Decl, Arm, Clause } from "@charter/syntax";
+import type { Program, Expr, Decl, Arm, Clause, TypeExpr } from "@charter/syntax";
 import type { CheckResult, Ty, Pred } from "@charter/types";
 import { Store, canonicalJson, type Json, type StepRecord } from "@charter/store";
 import {
@@ -176,6 +176,28 @@ export function interpreter(p: Program, c: CheckResult, opts: InterpOptions = {}
   const satisfies = (preds: Pred[], value: Value, ctx: Ctx = pure()) =>
     preds.every((pr) => truthy(evalExpr(pr.expr, new Map(), { ...ctx, it: value })));
 
+  /**
+   * Checks every refinement a value must meet, including those nested inside it:
+   * list elements, record fields, and the refinements of named types (also when optional).
+   * `satisfies` alone sees only the outermost predicates, because nested ones are not part of `Ty`.
+   */
+  const conforms = (te: TypeExpr, value: Value, ctx: Ctx = pure()): boolean => {
+    if (value.t === "none") return true; // whether none is allowed at all is the coercion's job
+    const b = te.base;
+    if (b.kind === "List" && value.t === "list" && !value.items.every((x) => conforms(b.elem, x, ctx))) return false;
+    if (b.kind === "RecordT" && value.t === "record") {
+      for (const f of b.fields) {
+        const fv = value.fields.find(([n]) => n === f.name);
+        if (fv && !conforms(f.type, fv[1], ctx)) return false;
+      }
+    }
+    if (b.kind === "Named" && b.name.parts.length === 1) {
+      const d = c.resolution.decls.get(b.name.parts[0]!);
+      if (d && d.kind === "TypeDecl" && !conforms(d.type, value, ctx)) return false;
+    }
+    return satisfies(c.resolveType(te).preds, value, ctx);
+  };
+
   const arith = (op: string, a: Value, b: Value): Value => {
     if (a.t === "text" && b.t === "text" && op === "+") return V.text(a.v + b.v);
     if (a.t === "time" && b.t === "dur") return { t: "time", v: op === "+" ? a.v + b.v : a.v - b.v };
@@ -262,7 +284,7 @@ export function interpreter(p: Program, c: CheckResult, opts: InterpOptions = {}
     const env: Env = new Map();
     sig.params.forEach((prm, i) => {
       const v = coerce(args[i]!, prm.type.ty);
-      if (!satisfies(prm.type.preds, v)) throw new Fault("refinement", `argument ${prm.name} = ${show(v)} breaks the refinement of ${name}`);
+      if (!conforms(d.params[i]!.type, v)) throw new Fault("refinement", `argument ${prm.name} = ${show(v)} breaks the refinement of ${name}`);
       env.set(prm.name, v);
     });
     const out = coerce(evalExpr(d.body, env, pure()), sig.ret.ty);
@@ -556,7 +578,7 @@ export function interpreter(p: Program, c: CheckResult, opts: InterpOptions = {}
         v = { t: "ref", entity: r.ty.name, id };
       } else {
         try { v = coerce(v, r.ty); } catch { return { kind: "reject", name: "ValidationError", detail: prm.name }; }
-        if (!satisfies(r.preds, v, ctx)) return { kind: "reject", name: "ValidationError", detail: prm.name };
+        if (!conforms(prm.type, v, ctx)) return { kind: "reject", name: "ValidationError", detail: prm.name };
       }
       env.set(prm.name, v);
     }
@@ -566,6 +588,7 @@ export function interpreter(p: Program, c: CheckResult, opts: InterpOptions = {}
   const permitted = (permit: Extract<Decl, { kind: "Rule" }>["permit"], env: Env, ctx: Ctx): boolean => {
     if (permit.mode === "system") return ctx.system;
     if (ctx.system) return true; // internal steps (triggers, operators) act for the program itself
+    if (permit.mode === "public") return true; // A26: callers who are not signed in, too
     if (principal && !ctx.caller) return false; // anyone means any authenticated caller
     if (permit.mode === "anyone") return true;
     return truthy(evalExpr(permit.expr!, env, ctx));

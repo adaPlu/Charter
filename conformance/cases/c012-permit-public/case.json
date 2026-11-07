@@ -1,0 +1,9 @@
+{
+  "title": "permit public admits callers who are not signed in",
+  "source": "Amendment A26, from H1 pilot draft tasks p13 and p18",
+  "covers": ["A26"],
+  "expect": {
+    "parse": "ok",
+    "check": { "errors": [], "warnings": [], "tests": { "pass": 2, "fail": 0, "skip": 0 } }
+  }
+}

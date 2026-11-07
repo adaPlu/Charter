@@ -1,0 +1,404 @@
+{
+  "id": "p09-support-tickets",
+  "family": "F3",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator registers clients and agents. A client opens a ticket with a nonblank subject of up to 100 characters. Only the operator can assign a registered agent. Only its assigned agent may close a ticket; closing twice rejects AlreadyClosed. Tickets start open. Only the creator or assigned agent can read a ticket, even after it closes.",
+  "contract": {
+    "rules": [
+      {
+        "name": "Register",
+        "params": [
+          [
+            "name",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "operator only",
+        "rejects": {}
+      },
+      {
+        "name": "OpenTicket",
+        "params": [
+          [
+            "subject",
+            "Text"
+          ]
+        ],
+        "returns": "Id",
+        "who": "registered caller",
+        "rejects": {
+          "ValidationError": "subject blank or too long"
+        }
+      },
+      {
+        "name": "Assign",
+        "params": [
+          [
+            "ticket",
+            "Id"
+          ],
+          [
+            "agent",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "operator only",
+        "rejects": {
+          "NotFound": "ticket or agent missing"
+        }
+      },
+      {
+        "name": "Close",
+        "params": [
+          [
+            "ticket",
+            "Id"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "assigned agent",
+        "rejects": {
+          "NotFound": "ticket missing",
+          "Denied": "not assigned agent",
+          "AlreadyClosed": "ticket already closed"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "ReadTicket",
+        "params": [
+          [
+            "ticket",
+            "Id"
+          ]
+        ],
+        "returns": "Record { subject: Text, status: Text, agent: Id or null }",
+        "who": "creator or assigned agent",
+        "rejects": {
+          "NotFound": "ticket missing",
+          "Denied": "not authorized"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "assign and close"
+  ],
+  "tests": [
+    {
+      "name": "assign and close",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/OpenTicket",
+          "args": [
+            "Login"
+          ],
+          "as": "$ana",
+          "save": "ticket",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Assign",
+          "args": [
+            "$ticket",
+            "$ben"
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Close",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ReadTicket",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": {
+              "subject": "Login",
+              "status": "closed",
+              "agent": "$ben"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "private and role based",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/OpenTicket",
+          "args": [
+            "Issue"
+          ],
+          "as": "$ana",
+          "save": "ticket",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ReadTicket",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 404,
+            "reason": "Denied"
+          }
+        },
+        {
+          "call": "rules/Assign",
+          "args": [
+            "$ticket",
+            "$ben"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Close",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "queries/ReadTicket",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": {
+              "subject": "Issue",
+              "status": "open",
+              "agent": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "repeat close",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ben"
+          ],
+          "system": true,
+          "save": "ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/OpenTicket",
+          "args": [
+            "Broken"
+          ],
+          "as": "$ana",
+          "save": "ticket",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Assign",
+          "args": [
+            "$ticket",
+            "$ben"
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ReadTicket",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200,
+            "value": {
+              "subject": "Broken",
+              "status": "open",
+              "agent": "$ben"
+            }
+          }
+        },
+        {
+          "call": "rules/Close",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Close",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Close",
+          "args": [
+            "$ticket"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 409,
+            "reason": "AlreadyClosed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad inputs",
+      "steps": [
+        {
+          "call": "rules/Register",
+          "args": [
+            "Ana"
+          ],
+          "system": true,
+          "save": "ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/OpenTicket",
+          "args": [
+            " "
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/OpenTicket",
+          "args": [
+            "Hi"
+          ],
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "rules/Assign",
+          "args": [
+            "missing",
+            "unknown"
+          ],
+          "system": true,
+          "expect": {
+            "status": 404
+          }
+        },
+        {
+          "call": "queries/ReadTicket",
+          "args": [
+            "missing"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 404
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

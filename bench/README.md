@@ -6,9 +6,9 @@ H1 asks whether models write valid Charter more often than valid TypeScript for 
 
 | Part | State |
 |---|---|
-| Harness: prompt, check, repair, hidden tests, analysis | Built and tested. A dry run with no model scores both languages' reference solutions 100%, and the repair loop works. |
+| Harness: prompt, check, repair, hidden tests, analysis | Built and tested. The two validation-only tasks have references in both languages. The 20 draft pilot tasks have TypeScript reference solutions; a mock TypeScript verification passed all 80 black-box scenarios. The repair loop works. |
 | Backends | `mock` and `mock-repair` (no model), `ollama`, `llamacpp`, `anthropic` |
-| Tasks | 2 validation tasks, written by the design process. **The 20 pilot tasks do not exist yet.** |
+| Tasks | **20 draft pilot tasks** across F1–F6, each with an HTTP contract, 4 black-box test scenarios, 1 visible example scenario, and a passing TypeScript reference; plus 2 separate validation-only tasks. These drafts await independent author and reviewer approval. |
 | Smoke run with a real model | Done with `llama3.2:3b` through Ollama, on a CPU. All 4 runs completed with 3 repairs each, in 18 to 29 seconds per run. No program was valid in either language. That is expected at 3 billion parameters, and it shows only that the real-model path works. |
 | Pilot run | Not run. Needs the decisions below. |
 
@@ -37,11 +37,19 @@ Two more things the report must say. The exported grammar forces whitespace afte
 
 ## Running it
 
-A dry run, with no model and no cost:
+A no-model check of the **two validation-only tasks**, which have references in both languages:
 
 ```bash
-node bench/harness/run.ts --backend mock --arms B,C --out bench/results/dry-run
+node bench/harness/run.ts --backend mock --tasks v1-notes,v2-wallet --arms B,C --out bench/results/dry-run
 ```
+
+A no-model check of all **20 pilot TypeScript references** and all their hidden scenarios:
+
+```bash
+node bench/harness/run.ts --backend mock --arms B --pilot --repairs 0 --out bench/results/pilot-ts-reference
+```
+
+The pilot drafts do not have Charter reference files; use arm B for the mock reference check. A real model can be tested on both B and C, as usual.
 
 A local model through Ollama (free, slow on a CPU):
 
@@ -71,7 +79,7 @@ The Anthropic backend pins the effort level and leaves refusal fallbacks off. A 
 
 ## Decisions needed before the pilot
 
-1. **Task authors.** Phase 7 requires the request, contract and hidden tests of each task to be written independently of Charter's design. Tasks written by the design process favour Charter. The two tasks here are for testing the harness only, and the analysis excludes them.
+1. **Independent author and reviewer approval.** The 20 task drafts were created with AI assistance on November 6, 2026, after consulting this benchmark's authoring guide. They have **not** been independently authored or independently reviewed as required by Phase 7. Do not treat them as an unbiased scientific pilot until an independent author and reviewer approve or replace the requests and hidden tests. The two original validation-only tasks remain excluded from pilot results.
 2. **Models and access.** For example, Claude Opus 5.5 and Claude Sonnet 5.5, with an API key. A local model through llama.cpp would add the constrained arm.
 3. **Budget.** The estimate below. A one-task calibration run, for about $1, gives real numbers first.
 
@@ -86,6 +94,22 @@ Measured prompt sizes: about 1,000 tokens for TypeScript and 1,600 for Charter, 
 | Claude Haiku 5.5 ($0.10 / $0.50) | 120 | under $1 |
 
 These are estimates. The harness records the real token counts of every run in `runs.jsonl`.
+
+## Draft pilot inventory and verification
+
+| Family | Pilot task IDs | Scenario count |
+|---|---|---:|
+| F1 Computation | p01-bulk-discounts, p02-shipping-quotes, p03-final-grades | 12 |
+| F2 CRUD | p04-private-bookmarks, p05-pantry-stock, p06-room-booking, p07-habit-tracker | 16 |
+| F3 Authorization | p08-team-pages, p09-support-tickets, p10-course-submissions, p11-collaborative-lists | 16 |
+| F4 Transactions | p12-store-credit, p13-event-tickets, p14-loyalty-points, p15-invoice-ledger | 16 |
+| F5 Workflows | p16-leave-approvals, p17-shipment-workflow, p18-review-moderation | 12 |
+| F6 Outside sweet spot | p19-word-counting, p20-shortest-route | 8 |
+| **Total** | **20 tasks** | **80 scenarios** |
+
+Each folder contains `task.json` and `reference.ts`. There are **80 scenarios in total**: `visibleTests` exposes one worked example for each task (20 visible examples), while the remaining **60 scenarios** stay hidden from model prompts and are evaluated by the harness. The no-model `mock` TypeScript run on November 6, 2026 reported **20/20 task successes and 80/80 scenario passes**, with all 20 reference programs passing `tsc --strict` on the first check. Results: `bench/results/pilot-reference-verified/runs.jsonl`. This verifies the TypeScript references, **not** that models have completed the pilot or that independent authorship is satisfied.
+
+Each draft also has a `reference.charter`, written to check that the task can be passed in Charter at all. All 20 pass `charter check`. **18 pass every scenario, and 2 cannot:** p19 (no way to read inside text) and p20 (queries cannot reject with a custom reason). Both are family F6, deliberately outside Charter's design, and are kept unchanged so the pilot measures that cost. Each starts with a `// BLOCKED:` comment. p13 and p18 failed at first too, because a program with signed-in users could not offer a public query; amendment A26 (`permit public`) fixed the language rather than the tasks. The errata explain each one. Results: `bench/results/pilot-charter-reference/runs.jsonl`.
 
 ## Writing a task
 

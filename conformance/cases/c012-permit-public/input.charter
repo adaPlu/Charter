@@ -1,0 +1,34 @@
+// Amendment A26: "permit public" lets callers who are not signed in call a rule or query,
+// in a module that also has signed-in callers. "permit anyone" still means any signed-in caller.
+// Found by the H1 pilot's draft tasks p13 (tickets remaining) and p18 (published reviews).
+module tickets@0.1.0
+principal Buyer
+entity Buyer { name: Text }
+entity Show { title: Text, left: Int where it >= 0 }
+entity Purchase { show: Id<Show>, buyer: Id<Buyer> }
+enum BuyError { SoldOut }
+
+query Remaining(s: Show): Int permit public = s.left
+
+query MyPurchases(): Int permit anyone =
+  count p in Purchase where p.buyer == caller.id
+
+rule Buy(s: Show): Int rejects BuyError
+  permit anyone
+  guard s.left >= 1 else reject SoldOut
+  set s.left = s.left - 1
+  create Purchase { show = s.id, buyer = caller.id } as p
+  return s.left
+
+test "anyone may read what is left, signed in or not" {
+  given ana = create Buyer { name = "Ana" }
+  given s = create Show { title = "Play", left = 2 }
+  when Buy(s) as ana expect ok
+  when Remaining(s) expect ok
+  then result == 1
+}
+
+test "a signed-in query still refuses callers who are not signed in" {
+  given s = create Show { title = "Play", left = 2 }
+  when MyPurchases() expect reject Denied
+}

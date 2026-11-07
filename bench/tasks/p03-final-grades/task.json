@@ -1,0 +1,242 @@
+{
+  "id": "p03-final-grades",
+  "family": "F1",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "A grade calculator accepts 1–5 integer scores from 0 to 100. When there are three or more scores, exactly one lowest score is discarded. The remaining scores are averaged, rounded down to a whole number, then an integer bonus of 0–10 is added. The final grade cannot exceed 100. A grade of at least 70 is passing.",
+  "contract": {
+    "rules": [],
+    "queries": [
+      {
+        "name": "FinalGrade",
+        "params": [
+          [
+            "scores",
+            "List of Int"
+          ],
+          [
+            "bonus",
+            "Int"
+          ]
+        ],
+        "returns": "Record { score: Int, passed: Bool }",
+        "who": "anyone",
+        "rejects": {
+          "ValidationError": "scores list length outside 1..5, invalid score, or bonus outside 0..10"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "grade examples"
+  ],
+  "tests": [
+    {
+      "name": "grade examples",
+      "steps": [
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              90,
+              70,
+              80
+            ],
+            0
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "score": 85,
+              "passed": true
+            }
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              60,
+              69
+            ],
+            0
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "score": 64,
+              "passed": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ties and cap",
+      "steps": [
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              50,
+              50,
+              100
+            ],
+            10
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "score": 85,
+              "passed": true
+            }
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              100,
+              100,
+              100,
+              100
+            ],
+            10
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "score": 100,
+              "passed": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "boundaries",
+      "steps": [
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              69
+            ],
+            1
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "score": 70,
+              "passed": true
+            }
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              69,
+              70,
+              70
+            ],
+            0
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "score": 70,
+              "passed": true
+            }
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              0
+            ],
+            0
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "score": 0,
+              "passed": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "bad scores",
+      "steps": [
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [],
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              101
+            ],
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              20,
+              1.5
+            ],
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              50
+            ],
+            11
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

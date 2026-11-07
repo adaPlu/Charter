@@ -1,0 +1,299 @@
+{
+  "id": "p20-shortest-route",
+  "family": "F6",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "An operator records directed roads between towns, each taking 1–10000 whole minutes. More than one road may join the same towns. Public route queries return the smallest total minutes on any directed path, including paths through intermediate towns. Travel from any name to itself takes zero minutes. When there is no path, reject NoRoute. Town names cannot be blank.",
+  "contract": {
+    "rules": [
+      {
+        "name": "AddRoad",
+        "params": [
+          [
+            "from",
+            "Text"
+          ],
+          [
+            "to",
+            "Text"
+          ],
+          [
+            "minutes",
+            "Int"
+          ]
+        ],
+        "returns": "nothing",
+        "who": "operator only",
+        "rejects": {
+          "ValidationError": "blank town or minutes not 1..10000"
+        }
+      }
+    ],
+    "queries": [
+      {
+        "name": "Shortest",
+        "params": [
+          [
+            "from",
+            "Text"
+          ],
+          [
+            "to",
+            "Text"
+          ]
+        ],
+        "returns": "Int: minimum minutes",
+        "who": "anyone",
+        "rejects": {
+          "ValidationError": "blank town",
+          "NoRoute": "no directed route exists"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "indirect shorter"
+  ],
+  "tests": [
+    {
+      "name": "indirect shorter",
+      "steps": [
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "B",
+            10
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "B",
+            "C",
+            5
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "C",
+            30
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "A",
+            "C"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "direction",
+      "steps": [
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "B",
+            7
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "B",
+            "A"
+          ],
+          "expect": {
+            "status": 409,
+            "reason": "NoRoute"
+          }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "A",
+            "A"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "A",
+            "B"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 7
+          }
+        }
+      ]
+    },
+    {
+      "name": "parallel roads and cycles",
+      "steps": [
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "B",
+            12
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "B",
+            3
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "B",
+            "A",
+            4
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "B",
+            "C",
+            5
+          ],
+          "system": true,
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "A",
+            "C"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 8
+          }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "C",
+            "A"
+          ],
+          "expect": {
+            "status": 409,
+            "reason": "NoRoute"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid and authorization",
+      "steps": [
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "",
+            "B",
+            2
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "B",
+            0
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "B",
+            10001
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/AddRoad",
+          "args": [
+            "A",
+            "B",
+            1
+          ],
+          "expect": {
+            "status": 403
+          }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "",
+            "A"
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

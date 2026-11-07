@@ -1,0 +1,40 @@
+// Remaining is public (amendment A26): anyone may see what is left, signed in or not.
+module tickets@0.1.0
+principal Person
+
+entity Person { name: Text }
+entity Show { title: Text where len(trim(it)) >= 1, price: Int where it >= 1 and it <= 100000, stock: Int where it >= 0 and it <= 1000 }
+entity Purchase { buyer: Id<Person>, show: Id<Show>, quantity: Int, total: Int, cancelled: Bool = false }
+enum TicketError { SoldOut, AlreadyCancelled }
+
+rule Register(name: Text where len(trim(it)) >= 1): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule CreateEvent(title: Text where len(trim(it)) >= 1, priceCents: Int where it >= 1 and it <= 100000, stock: Int where it >= 0 and it <= 1000): Id<Show>
+  permit system
+  create Show { title = title, price = priceCents, stock = stock } as s
+  return s.id
+
+// The contract calls the first argument "event", a Charter reserved word; it is "ev" here.
+rule Buy(ev: Show, quantity: Int where it >= 1 and it <= 10): Id<Purchase> rejects TicketError
+  permit anyone
+  guard ev.stock >= quantity else reject SoldOut
+  set ev.stock = ev.stock - quantity
+  create Purchase { buyer = caller.id, show = ev.id, quantity = quantity, total = quantity * ev.price } as pu
+  return pu.id
+
+rule CancelPurchase(purchase: Purchase) rejects TicketError
+  permit purchase.buyer == caller.id
+  guard not purchase.cancelled else reject AlreadyCancelled
+  set purchase.cancelled = true
+  for s2 in Show {
+    if s2.id == purchase.show {
+      set s2.stock = s2.stock + purchase.quantity
+    }
+  }
+
+query Remaining(ev2: Show): Int permit public = ev2.stock
+
+query PurchaseTotal(purchase: Purchase): Int permit purchase.buyer == caller.id = purchase.total

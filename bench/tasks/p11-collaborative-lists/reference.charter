@@ -1,0 +1,41 @@
+module lists@0.1.0
+principal Person
+
+entity Person { name: Text }
+type ListName = Text where len(trim(it)) >= 1
+type ItemName = Text where len(trim(it)) >= 1 and len(it) <= 60
+entity ShopList { owner: Id<Person>, name: ListName }
+entity Membership { list: Id<ShopList>, member: Id<Person> }
+entity Item { list: Id<ShopList>, name: ItemName, author: Id<Person> }
+type ItemView = { id: Id<Item>, name: Text }
+
+permission IsMember(u: Person, l: ShopList) = exists m in Membership: m.list == l.id and m.member == u.id
+
+rule Register(name: Text where len(trim(it)) >= 1): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule CreateList(name: ListName): Id<ShopList>
+  permit anyone
+  create ShopList { owner = caller.id, name = name } as l
+  create Membership { list = l.id, member = caller.id } as m0
+  return l.id
+
+rule Invite(list: ShopList, person: Person)
+  permit list.owner == caller.id
+  if not (exists m1 in Membership: m1.list == list.id and m1.member == person.id) {
+    create Membership { list = list.id, member = person.id } as m2
+  }
+
+rule AddItem(list: ShopList, name: ItemName): Id<Item>
+  permit IsMember(caller, list)
+  create Item { list = list.id, name = name, author = caller.id } as i
+  return i.id
+
+rule RemoveItem(item: Item)
+  permit item.author == caller.id or (exists l2 in ShopList: l2.id == item.list and l2.owner == caller.id)
+  delete item
+
+query ListItems(list: ShopList): List<ItemView> permit IsMember(caller, list) =
+  select { id = i3.id, name = i3.name } for i3 in Item where i3.list == list.id order by i3.name, i3.id

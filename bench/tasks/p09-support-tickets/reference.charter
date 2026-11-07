@@ -1,0 +1,30 @@
+module tickets@0.1.0
+principal Person
+
+entity Person { name: Text }
+type Subject = Text where len(trim(it)) >= 1 and len(it) <= 100
+entity Ticket { owner: Id<Person>, subject: Subject, status: Text = "open", agent: Id<Person>? = none }
+enum TicketError { AlreadyClosed }
+type TicketView = { subject: Text, status: Text, agent: Id<Person>? }
+
+rule Register(name: Text): Id<Person>
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+rule OpenTicket(subject: Subject): Id<Ticket>
+  permit anyone
+  create Ticket { owner = caller.id, subject = subject } as t
+  return t.id
+
+rule Assign(ticket: Ticket, agent: Person)
+  permit system
+  set ticket.agent = agent.id
+
+rule Close(ticket: Ticket) rejects TicketError
+  permit ticket.agent == caller.id
+  guard ticket.status != "closed" else reject AlreadyClosed
+  set ticket.status = "closed"
+
+query ReadTicket(ticket: Ticket): TicketView permit ticket.owner == caller.id or ticket.agent == caller.id =
+  { subject = ticket.subject, status = ticket.status, agent = ticket.agent }
