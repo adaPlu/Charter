@@ -218,8 +218,7 @@
           ],
           "as": "$ana",
           "expect": {
-            "status": 404,
-            "reason": "Denied"
+            "status": 404
           }
         },
         {

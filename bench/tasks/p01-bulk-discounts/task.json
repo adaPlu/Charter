@@ -3,7 +3,7 @@
   "family": "F1",
   "validationOnly": false,
   "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
-  "request": "A store quotes orders in whole cents. Quantity must be 1–50 and price per unit 1–100000 cents. Orders of at least 10 units earn 10% off the subtotal (round down). Members then earn an additional 5% off the discounted subtotal (round down). Everyone can request a quote; invalid inputs are rejected.",
+  "request": "A store quotes orders in whole cents. Quantity must be 1–50 and price per unit 1–100000 cents. Orders of at least 10 units get a discount of 10% of the subtotal, with the discount amount rounded down to whole cents. Members then get a further discount of 5% of the discounted subtotal, again with the discount amount rounded down. Everyone can request a quote; invalid inputs are rejected.",
   "contract": {
     "rules": [],
     "queries": [

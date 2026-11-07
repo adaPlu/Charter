@@ -79,7 +79,7 @@ The Anthropic backend pins the effort level and leaves refusal fallbacks off. A 
 
 ## Decisions needed before the pilot
 
-1. **Independent author and reviewer approval.** The 20 task drafts were created with AI assistance on November 6, 2026, after consulting this benchmark's authoring guide. They have **not** been independently authored or independently reviewed as required by Phase 7. Do not treat them as an unbiased scientific pilot until an independent author and reviewer approve or replace the requests and hidden tests. The two original validation-only tasks remain excluded from pilot results.
+1. **Independent author and reviewer approval.** The 20 task drafts were created with AI assistance on November 6, 2026, after consulting this benchmark's authoring guide. They have **not** been independently authored or independently reviewed as required by Phase 7. Do not treat them as an unbiased scientific pilot until an independent author and reviewer approve or replace the requests and hidden tests. The two original validation-only tasks remain excluded from pilot results. **The reviewer starts at [review/README.md](review/README.md)**, works from [review/packet.md](review/packet.md), which has no solutions, and records verdicts in [review/verdicts.md](review/verdicts.md).
 2. **Models and access.** For example, Claude Opus 5.5 and Claude Sonnet 5.5, with an API key. A local model through llama.cpp would add the constrained arm.
 3. **Budget.** The estimate below. A one-task calibration run, for about $1, gives real numbers first.
 
@@ -128,6 +128,6 @@ Rules for authors:
 
 - **Write the request and tests before looking at any solution, in either language.**
 - **Make every test decided by the request.** A test the request does not settle measures luck, so remove it.
-- **Test one failure at a time.** A call that is both unauthorized and invalid can fairly be answered either way.
+- **Test one failure at a time.** A call that is both unauthorized and invalid can fairly be answered either way. Programs check failures in different orders, and no order is part of the contract. Where two failures cannot be separated, such as an unknown state that is also an illegal transition, the request must say which one wins. A review on November 7, 2026 found 6 of 144 expected rejections that broke this rule, and fixed them.
 - **Write contracts in plain terms:** Text, Int, Bool, Id, lists of records. Ids are strings, and amounts in cents avoid decimal formatting disputes.
 - **Don't avoid words because Charter reserves them.** If a natural parameter name is `to`, use `to`.

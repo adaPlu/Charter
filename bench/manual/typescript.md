@@ -31,6 +31,6 @@ The runtime provides:
 - `ctx.system`: `true` for an operator's system call.
 - `ctx.db`: a record store. `get(table, id)`, `put(table, id, record)`, `delete(table, id)`, `all(table)` (ascending id). Records are plain JSON objects.
 - `ctx.newId()`: a fresh id. `ctx.now()`: the time in milliseconds.
-- `throw new Reject(reason, detail?)`: rejects the call. The reasons map to HTTP statuses: `ValidationError` 400, `Denied` 403, `NotFound` 404, anything else 409.
+- `throw new Reject(reason, detail?)`: rejects the call. The reasons map to HTTP statuses: `ValidationError` 400, `Denied` 403, `NotFound` 404, anything else 409. A query that rejects with `Denied` answers 404 instead, so a refused query does not reveal that the thing exists.
 
 Every rule call runs in one transaction. Throwing anything rolls back all of its writes. Queries are read-only. Arguments arrive as JSON values in the order the contract lists them, so check their types yourself. Your code must enforce every rule in the task: validation, who may do what, and conditions that must always hold.

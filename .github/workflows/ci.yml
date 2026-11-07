@@ -58,3 +58,6 @@ jobs:
         run: |
           node scripts/build-design-doc.mjs
           git diff --exit-code -- docs/charter-design.md
+
+      - name: Reviewers' packet matches the tasks
+        run: node bench/harness/review-packet.ts --check

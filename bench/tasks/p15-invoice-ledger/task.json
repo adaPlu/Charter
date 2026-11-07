@@ -383,6 +383,17 @@
           }
         },
         {
+          "call": "rules/PayInvoice",
+          "args": [
+            "$inv",
+            10
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
           "call": "rules/Refund",
           "args": [
             "$inv",

@@ -275,6 +275,17 @@
           }
         },
         {
+          "call": "rules/LogDay",
+          "args": [
+            "$habit",
+            "2026-11-01"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
           "call": "rules/UnlogDay",
           "args": [
             "$habit",

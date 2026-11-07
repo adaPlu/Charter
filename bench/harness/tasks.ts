@@ -70,17 +70,19 @@ export function contractText(t: Task): string {
 
 /** The visible tests, written out as example calls. Hidden tests are never shown to the model. */
 export function examplesText(t: Task): string {
-  const out: string[] = [];
-  for (const test of t.tests.filter((x) => t.visibleTests.includes(x.name))) {
-    out.push(`Example: ${test.name}`);
-    for (const s of test.steps) {
-      const who = s.system ? "as the operator" : s.as ? `as ${s.as}` : "with no caller";
-      const want = [`status ${s.expect.status}`];
-      if (s.expect.reason) want.push(`reason ${s.expect.reason}`);
-      if (s.expect.value !== undefined) want.push(`value ${JSON.stringify(s.expect.value)}`);
-      if (s.expect.length !== undefined) want.push(`a list of ${s.expect.length}`);
-      out.push(`  POST /${s.call} ${JSON.stringify(s.args)} ${who} -> ${want.join(", ")}${s.save ? ` (value saved as $${s.save})` : ""}`);
-    }
+  return t.tests.filter((x) => t.visibleTests.includes(x.name)).map((x) => testText(x, "Example: ")).join("\n");
+}
+
+/** One test written out as calls, one line per step. Also used for the reviewers' packet. */
+export function testText(test: Task["tests"][number], heading = ""): string {
+  const out: string[] = [`${heading}${test.name}`];
+  for (const s of test.steps) {
+    const who = s.system ? "as the operator" : s.as ? `as ${s.as}` : "with no caller";
+    const want = [`status ${s.expect.status}`];
+    if (s.expect.reason) want.push(`reason ${s.expect.reason}`);
+    if (s.expect.value !== undefined) want.push(`value ${JSON.stringify(s.expect.value)}`);
+    if (s.expect.length !== undefined) want.push(`a list of ${s.expect.length}`);
+    out.push(`  POST /${s.call} ${JSON.stringify(s.args)} ${who} -> ${want.join(", ")}${s.save ? ` (value saved as $${s.save})` : ""}`);
   }
   return out.join("\n");
 }

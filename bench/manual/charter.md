@@ -37,6 +37,7 @@ rule Take(i: Item, qty: Int where > 0) rejects ItemError
 
 - The header is `rule Name(params) [: ReturnType] [rejects ErrorEnum]`, then exactly one `permit`, then clauses, one per line.
 - `permit anyone` (signed in), `permit public` (anyone at all, signed in or not; `caller` cannot be used), `permit system` (operator only), or `permit <condition>`. A failed permit gives `Denied`.
+- HTTP statuses: `ValidationError` 400, `Denied` 403, `NotFound` 404, any other rejection 409. A query refused with `Denied` answers 404 instead, so a refused query does not reveal that the thing exists.
 - A parameter of entity type (`i: Item`) is passed as an id; if it does not exist the call gives `NotFound`.
 - Clauses: `let x = e`, `guard c else reject Variant` (Variant from the rule's `rejects` enum), `set x.field = e`, `create E { f = e, ... } as x`, `delete x`, `for x in coll { clauses }`, `if c { clauses } else { clauses }`, `return e`.
 - A rule is one transaction: if any guard fails, or any field refinement or invariant would be broken, nothing changes.
