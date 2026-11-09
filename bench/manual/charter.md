@@ -79,6 +79,6 @@ fn pad(t: Text, width: Int): Text = if len(t) >= width then t else pad("0" + t, 
 type Code = Text where len(it) <= 6 and pad(it, 6) != "000000"
 ```
 
-- `fn Name(params): Type = expr` declares a function over its arguments only: do not read stored records or use `caller` in it.
+- `fn Name(params): Type = expr` declares a function over its arguments only. It cannot read stored records or their fields, `caller`, `now` or a permission; pass the values in instead. An entity's `id` is fine.
 - A function may call itself. Recursion is the only way to repeat work inside an expression. Calls may nest at most 250 deep; deeper is a fault.
 - Functions can be used anywhere an expression can, including in refinements and in `select`, `count` and `sum`.

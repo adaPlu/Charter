@@ -1,0 +1,20 @@
+// A fn works on its arguments only (design 2.2, rule T-Field; ambient reads are for rules).
+// Each of the five functions below reads state, and each read is CH0231.
+module purity@0.1.0
+principal User
+entity User { name: Text, role: Role = Member }
+enum Role { Member, Admin }
+permission IsAdmin(u: User) = u.role == Admin
+
+fn users(): Int = count u in User
+fn me(): Id<User> = caller.id
+fn stamp(): Time = now
+fn nameOf(u: User): Text = u.name
+fn admin(u: User): Bool = IsAdmin(u)
+
+// Allowed: an entity's id is a value, and recursion over arguments is fine (A27).
+fn idOf(u: User): Id<User> = u.id
+fn down(n: Int): Int = if n <= 0 then 0 else down(n - 1)
+
+// Queries and permissions still read state.
+query Users(): Int permit anyone = count u in User

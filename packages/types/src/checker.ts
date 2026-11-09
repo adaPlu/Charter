@@ -41,6 +41,8 @@ interface Env {
   callerTy?: Ty;
   /** True in a declaration with "permit public" (A26), where there may be no caller. */
   publicDecl?: boolean;
+  /** Inside a fn body: its name. A fn works on its arguments only (design 2.2, rule T-Field). */
+  pureFn?: string;
   /** True inside a test's then clauses, where result, accepted, effects and old(...) mean something. */
   inThen?: boolean;
   /**
@@ -322,6 +324,9 @@ export function check(p: Program): CheckResult {
   // ---------------------------------------------------------------- expressions
 
   const fail = (e: Expr, message: string, code: string = CODES.TYPE_MISMATCH): Ty => { err(code, message, e.span); return T.Unknown; };
+  /** Reports a state read inside a fn (design 2.2: a fn is pure). Checking carries on with the usual type. */
+  const impure = (e: Expr, env: Env, what: string): void => void
+    err(CODES.IMPURE_FN, `fn ${env.pureFn} reads ${what}, but a fn works on its arguments only. Pass the value in as an argument, or use a query or rule.`, e.span);
 
   const expectTy = (e: Expr, env: Env, want: Ty, what: string): Ty => {
     const got = infer(e, env, want);
@@ -364,20 +369,24 @@ export function check(p: Program): CheckResult {
           if (v.variant.fields.length) return fail(e, `variant ${e.name} carries data; call it, for example ${e.name}(…)`);
           return { k: "Enum", name: v.enumName };
         }
-        if (ref.kind === "decl" && ref.decl.kind === "Entity") return { k: "Entity", name: ref.decl.name };
+        if (ref.kind === "decl" && ref.decl.kind === "Entity") {
+          if (env.pureFn) impure(e, env, `the stored ${ref.decl.name} records`);
+          return { k: "Entity", name: ref.decl.name };
+        }
         if (ref.kind === "decl" || ref.kind === "builtin") return fail(e, `"${e.name}" is not a value here`);
         return T.Unknown;
       }
       case "Keyword":
         switch (e.name) {
           case "it": return env.itTy ?? fail(e, `"it" is only meaningful inside a refinement`);
-          case "now": return T.Time;
+          case "now": if (env.pureFn) impure(e, env, `"now"`); return T.Time;
           case "result": return env.inThen ? env.resultTy ?? T.None : fail(e, `"result" is only meaningful in a test's then clause`);
           case "accepted": return env.inThen ? T.Bool : fail(e, `"accepted" is only meaningful in a test's then clause`);
           case "effects":
             return env.inThen ? { k: "List", elem: { k: "Record", fields: [["cap", T.Text], ["args", { k: "List", elem: T.Unknown }]] } }
               : fail(e, `"effects" is only meaningful in a test's then clause`);
           case "caller":
+            if (env.pureFn) { impure(e, env, `"caller"`); return env.callerTy ?? T.Unknown; }
             if (env.publicDecl) return fail(e, `"caller" is not available under "permit public", because the call may come from someone who is not signed in (amendment A26). Use "permit anyone" if only signed-in callers may call it.`);
             return env.callerTy ?? fail(e, `"caller" needs a principal declaration, such as "principal User"`);
         }
@@ -436,6 +445,7 @@ export function check(p: Program): CheckResult {
         if (ot.k === "Entity") {
           const d = decls.get(ot.name);
           if (e.name === "id") return { k: "Id", target: ot.name };
+          if (env.pureFn) impure(e, env, `the stored field ${ot.name}.${e.name}`);
           const f = d && d.kind === "Entity" ? d.fields.find((x) => x.name === e.name) : undefined;
           return f ? resolveType(f.type).ty : fail(e, `entity ${ot.name} has no field "${e.name}"`, CODES.UNKNOWN_FIELD);
         }
@@ -568,6 +578,7 @@ export function check(p: Program): CheckResult {
     }
     if (ref.kind === "decl" && ref.decl.kind === "Permission") {
       const pd = ref.decl;
+      if (env.pureFn) impure(e, env, `stored records through permission ${name}`);
       if (arity(pd.params.length)) {
         e.args.forEach((a, i) => {
           const prm = resolveType(pd.params[i]!.type);
@@ -913,7 +924,7 @@ export function check(p: Program): CheckResult {
         }
         break;
       case "FnDecl": {
-        const env = bindParams(baseEnv(d), d.params);
+        const env = bindParams({ ...baseEnv(d), pureFn: d.name }, d.params);
         const sig = sigs.get(d.name)!;
         const bt = infer(d.body, env, sig.ret.ty);
         if (!assignable(bt, sig.ret.ty)) err(CODES.TYPE_MISMATCH, `${d.name} should return ${show(sig.ret.ty)}, but its body is ${show(bt)}`, d.body.span);

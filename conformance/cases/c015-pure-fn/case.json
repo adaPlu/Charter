@@ -1,0 +1,18 @@
+{
+  "title": "a fn may not read stored records, caller, now or a permission",
+  "source": "Design doc section 2.2 (fn is pure) and rule T-Field; found unenforced during the H1 pilot (errata)",
+  "covers": [],
+  "expect": {
+    "parse": "ok",
+    "check": {
+      "errors": [
+        { "code": "CH0231", "line": 9 },
+        { "code": "CH0231", "line": 10 },
+        { "code": "CH0231", "line": 11 },
+        { "code": "CH0231", "line": 12 },
+        { "code": "CH0231", "line": 13 }
+      ],
+      "warnings": []
+    }
+  }
+}
