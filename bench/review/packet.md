@@ -1369,6 +1369,8 @@ Queries (read only):
   POST /queries/CountWords ["a1a a-a a_a","a"] with no caller -> status 200, value 6
   POST /queries/CountWords ["hellohelloworld hello","hello"] with no caller -> status 200, value 1
   POST /queries/CountWords ["éHELLOé hello","hello"] with no caller -> status 200, value 2
+  POST /queries/CountWords ["cat中cat cat","cat"] with no caller -> status 200, value 3
+  POST /queries/CountWords ["cat😀cat","cat"] with no caller -> status 200, value 2
 
 [hidden]  empty and case
   POST /queries/CountWords ["","hello"] with no caller -> status 200, value 0

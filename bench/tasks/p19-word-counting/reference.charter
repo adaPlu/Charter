@@ -1,4 +1,5 @@
-// PARTIAL: passes every test, but only for passages whose characters are all in its table.
+// BLOCKED: fails the "separators" scenario. It reads only passages whose characters are all in
+// its table.
 //
 // Charter cannot index, split or slice Text, but it can compare Text in code-unit order, and a
 // fn may call itself. If s starts with the known prefix p, its next character is c exactly when
@@ -11,7 +12,8 @@
 // successor is a control character that cannot be written. Any other character, such as "中",
 // an emoji or "~", stops the reading: the words before it are counted and the rest is ignored.
 // The request says every non-ASCII character separates words, so on such a passage this program
-// can give a wrong count. No hidden test contains one.
+// gives a wrong count: "cat中cat cat" gives 1, not 3. A hidden test checks exactly that; the
+// project owner added it on November 9, 2026, after this reference passed without it.
 //
 // Checking that the search term is only ASCII letters is fully correct: that alphabet is closed.
 module wordcount@0.1.0

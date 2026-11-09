@@ -1,6 +1,6 @@
 {
-  "sha256": "c37897d3afa7a2e6d626ba17748710cf3599311a49d69dfd00fca4fb8c0c79cb",
+  "sha256": "391e02e02a392563b5b11cea0db0c5c56b4ef2bbeb66832cca55c6b1c32aea33",
   "frozenOn": "2026-11-09",
   "tasks": 22,
-  "reason": "p10 step 7 now checks reason NotFound; F6 tasks p21-release-versions and p22-shift-coverage added (owner's decisions, 2026-11-09), before the packet went to the reviewer"
+  "reason": "p19: two test steps added to \"separators\" (a passage with 中, and one with an emoji), owner's decision 2026-11-09, before the packet went to the reviewer"
 }

@@ -93,6 +93,28 @@
             "status": 200,
             "value": 2
           }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "cat中cat cat",
+            "cat"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 3
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "cat😀cat",
+            "cat"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 2
+          }
         }
       ]
     },

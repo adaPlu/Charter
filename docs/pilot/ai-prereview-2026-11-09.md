@@ -84,7 +84,7 @@ Both open decisions above were settled by the project owner before the packet we
 
 Results after these changes: TypeScript 22 of 22 tasks, 88 of 88 scenarios; Charter 19 of 22 (p10, p19 and p20 fail). The packet was re-frozen as SHA-256 `c37897d3afa7…`.
 
-Writing p21's Charter reference also found that Text can be read character by character. At the owner's request p19's Charter reference was rewritten that way: it now passes all 4 scenarios, so Charter passes 20 of 22, but it only knows the characters written out in its source and miscounts passages with others, which no hidden test contains. Rewriting it also found a type-checker bug, now fixed. The model manual does not teach the technique. See the errata.
+Writing p21's Charter reference also found that Text can be read character by character. At the owner's request p19's Charter reference was rewritten that way: it passed all 4 scenarios, but it only knows the characters written out in its source and miscounts passages with others. The owner then added two test steps to p19 with such characters (`中` and an emoji), which the request already decided; they were written after seeing that solution. p19 fails in Charter again, so Charter passes 19 of 22. Rewriting it also found a type-checker bug, now fixed. The packet was re-frozen for the new steps. The model manual does not teach the technique. See the errata.
 
 ## Every changed file
 
