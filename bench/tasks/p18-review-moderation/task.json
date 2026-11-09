@@ -324,7 +324,16 @@
           "args": [],
           "expect": {
             "status": 200,
-            "length": 2
+            "value": [
+              {
+                "stars": 5,
+                "message": "Alpha"
+              },
+              {
+                "stars": 3,
+                "message": "Okay"
+              }
+            ]
           }
         }
       ]

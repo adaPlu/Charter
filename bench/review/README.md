@@ -33,3 +33,9 @@ Fill in [verdicts.md](verdicts.md). For each task write **Approve**, **Edit** (s
 You may also write new tasks of your own. The rules for task authors are in [../README.md](../README.md), under "Writing a task"; the most important is to write the request and tests before thinking about any solution.
 
 Your name goes into each approved task's `authoredBy` field, and the pilot report says who reviewed the tasks and whether they had any part in Charter's design.
+
+## About the AI pre-review
+
+Before this packet was frozen, AI models checked it and the tasks were edited (`docs/pilot/ai-prereview-2026-11-09.md`). That was not a review by you and does not count as one. Please **do not read it until your verdicts are written**, so it cannot steer you. Afterwards, compare: anything it missed or decided badly is worth saying.
+
+The packet you received is frozen (`freeze.json`). If anything in the tasks changes after you start, you will be told exactly what.

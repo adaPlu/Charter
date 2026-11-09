@@ -3,9 +3,11 @@
 // independently of the language's design; this packet is what that person reads.
 //
 //   node bench/harness/review-packet.ts            writes bench/review/packet.md and verdicts.md
-//   node bench/harness/review-packet.ts --check    fails if packet.md is out of date (CI)
+//   node bench/harness/review-packet.ts --check    fails if packet.md is out of date, or differs from the frozen version (CI)
+//   node bench/harness/review-packet.ts --freeze "<reason>"   records the version given to the human reviewer
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { loadTasks, contractText, testText } from "./tasks.ts";
 
@@ -38,12 +40,30 @@ for (const t of tasks) {
 const packetText = packet.join("\n");
 
 const packetPath = join(outDir, "packet.md");
+// The frozen version is the one the human reviewer is given. Changing a task after the freeze
+// fails CI until someone deliberately freezes again, so the verdicts always match what was read.
+const freezePath = join(outDir, "freeze.json");
+const sha = createHash("sha256").update(packetText).digest("hex");
 if (process.argv.includes("--check")) {
   if (!existsSync(packetPath) || readFileSync(packetPath, "utf8") !== packetText) {
     console.error("review-packet: bench/review/packet.md is out of date; run node bench/harness/review-packet.ts");
     process.exit(1);
   }
-  console.log(`review-packet: ok (${tasks.length} tasks)`);
+  if (existsSync(freezePath)) {
+    const f = JSON.parse(readFileSync(freezePath, "utf8")) as { sha256: string; frozenOn: string };
+    if (f.sha256 !== sha) {
+      console.error(`review-packet: the tasks changed after the packet was frozen on ${f.frozenOn}. The reviewer's verdicts no longer match. Re-freeze with --freeze <reason> and tell the reviewer what changed.`);
+      process.exit(1);
+    }
+  }
+  console.log(`review-packet: ok (${tasks.length} tasks${existsSync(freezePath) ? ", frozen" : ""})`);
+} else if (process.argv.includes("--freeze")) {
+  const reason = process.argv[process.argv.indexOf("--freeze") + 1];
+  if (!reason) { console.error("review-packet: --freeze needs a reason"); process.exit(1); }
+  if (!existsSync(packetPath) || readFileSync(packetPath, "utf8") !== packetText) { console.error("review-packet: regenerate the packet before freezing"); process.exit(1); }
+  const frozenOn = new Date().toISOString().slice(0, 10);
+  writeFileSync(freezePath, JSON.stringify({ sha256: sha, frozenOn, tasks: tasks.length, reason }, null, 2) + "\n");
+  console.log(`review-packet: frozen ${sha.slice(0, 12)} on ${frozenOn}`);
 } else {
   mkdirSync(outDir, { recursive: true });
   writeFileSync(packetPath, packetText);

@@ -294,6 +294,16 @@
             "status": 200,
             "length": 1
           }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Eve"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
         }
       ]
     },
@@ -336,6 +346,17 @@
         {
           "call": "rules/AddBookmark",
           "args": [
+            "$title81",
+            "https://a"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/AddBookmark",
+          "args": [
             "OK",
             "https://a"
           ],
@@ -363,5 +384,10 @@
       ]
     }
   ],
-  "constants": {}
+  "constants": {
+    "title81": {
+      "repeat": "a",
+      "times": 81
+    }
+  }
 }

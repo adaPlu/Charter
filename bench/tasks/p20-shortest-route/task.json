@@ -154,6 +154,17 @@
             "status": 200,
             "value": 7
           }
+        },
+        {
+          "call": "queries/Shortest",
+          "args": [
+            "Zed",
+            "Zed"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
         }
       ]
     },

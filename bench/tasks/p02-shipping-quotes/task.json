@@ -3,7 +3,7 @@
   "family": "F1",
   "validationOnly": false,
   "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
-  "request": "A shipping calculator charges 400 cents for local parcels, 800 for regional, or 1600 for remote, plus 100 cents per kilogram. Parcels must weigh 1–30 whole kilograms. Express adds 600 cents. Standard local delivery is completely free when the basket subtotal reaches 5000 cents, but express local delivery is not free. Basket amounts must be nonnegative integers.",
+  "request": "A shipping calculator charges 400 cents for local parcels, 800 for regional, or 1600 for remote, plus 100 cents per kilogram. Parcels must weigh 1–30 whole kilograms. Express adds 600 cents. Standard (non-express) local delivery is completely free when the basket subtotal reaches 5000 cents; express local delivery is always charged in full. Basket amounts must be nonnegative integers.",
   "contract": {
     "rules": [],
     "queries": [
@@ -30,7 +30,7 @@
         "returns": "Int: shipping charge",
         "who": "anyone",
         "rejects": {
-          "ValidationError": "zone must be local/regional/remote, weight 1..30, express Bool and basket nonnegative Int"
+          "ValidationError": "zone not local/regional/remote, kilograms not 1..30, express not Bool, or basketCents not a nonnegative Int"
         }
       }
     ]

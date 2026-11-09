@@ -3,7 +3,7 @@
   "family": "F2",
   "validationOnly": false,
   "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
-  "request": "An operator registers people. A person creates habits with nonblank names no longer than 40 characters. They can log a completed day in YYYY-MM-DD form at most once per habit, and erase a logged day. Removing a day that was never logged is NotFound. The owner sees only their own habits and their count of distinct completed days, sorted by name then id. Dates only require the stated shape.",
+  "request": "An operator registers people. A person creates habits with nonblank titles no longer than 40 characters. They can log a completed day in YYYY-MM-DD form at most once per habit, and erase a logged day. Removing a day that was never logged is NotFound. The owner sees only their own habits and their count of distinct completed days, sorted by title then id. Dates only require the stated shape.",
   "contract": {
     "rules": [
       {
@@ -372,9 +372,24 @@
           "expect": {
             "status": 404
           }
+        },
+        {
+          "call": "rules/CreateHabit",
+          "args": [
+            "$title41"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
         }
       ]
     }
   ],
-  "constants": {}
+  "constants": {
+    "title41": {
+      "repeat": "a",
+      "times": 41
+    }
+  }
 }

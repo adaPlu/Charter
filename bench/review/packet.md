@@ -21,6 +21,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 
@@ -63,7 +64,7 @@ Queries (read only):
 
 **Request**
 
-> A shipping calculator charges 400 cents for local parcels, 800 for regional, or 1600 for remote, plus 100 cents per kilogram. Parcels must weigh 1–30 whole kilograms. Express adds 600 cents. Standard local delivery is completely free when the basket subtotal reaches 5000 cents, but express local delivery is not free. Basket amounts must be nonnegative integers.
+> A shipping calculator charges 400 cents for local parcels, 800 for regional, or 1600 for remote, plus 100 cents per kilogram. Parcels must weigh 1–30 whole kilograms. Express adds 600 cents. Standard (non-express) local delivery is completely free when the basket subtotal reaches 5000 cents; express local delivery is always charged in full. Basket amounts must be nonnegative integers.
 
 **Contract**
 
@@ -72,12 +73,13 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 
 Queries (read only):
 - POST /queries/Shipping  args: [zone: Text, kilograms: Int, express: Bool, basketCents: Int]  returns: Int: shipping charge  allowed: anyone
-    rejects with ValidationError when zone must be local/regional/remote, weight 1..30, express Bool and basket nonnegative Int
+    rejects with ValidationError when zone not local/regional/remote, kilograms not 1..30, express not Bool, or basketCents not a nonnegative Int
 ```
 
 **Tests**
@@ -123,6 +125,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 
@@ -155,6 +158,7 @@ Queries (read only):
   POST /queries/FinalGrade [[101],0] with no caller -> status 400
   POST /queries/FinalGrade [[20,1.5],0] with no caller -> status 400
   POST /queries/FinalGrade [[50],11] with no caller -> status 400
+  POST /queries/FinalGrade [[-1],0] with no caller -> status 400
 
 ```
 
@@ -173,6 +177,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -217,11 +222,13 @@ Queries (read only):
   POST /rules/RenameBookmark ["$item","Hack"] as $ben -> status 403
   POST /rules/DeleteBookmark ["$item"] as $ben -> status 403
   POST /queries/MyBookmarks [] as $ana -> status 200, a list of 1
+  POST /rules/Register ["Eve"] as $ana -> status 403
 
 [hidden]  bad input
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
   POST /rules/AddBookmark [" ","https://a"] as $ana -> status 400
   POST /rules/AddBookmark ["OK"," "] as $ana -> status 400
+  POST /rules/AddBookmark ["$title81","https://a"] as $ana -> status 400
   POST /rules/AddBookmark ["OK","https://a"] with no caller -> status 403
   POST /rules/DeleteBookmark ["missing"] as $ana -> status 404
   POST /queries/MyBookmarks [] with no caller -> status 404
@@ -243,6 +250,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -297,6 +305,8 @@ Queries (read only):
   POST /rules/Consume ["$item",6] as $ana -> status 409, reason InsufficientStock
   POST /rules/Restock ["$item",0] as $ana -> status 400
   POST /rules/Consume ["$item",0] as $ana -> status 400
+  POST /rules/AddItem ["Oil",101] as $ana -> status 400
+  POST /rules/Restock ["$item",101] as $ana -> status 400
   POST /queries/MyStock [] as $ana -> status 200, value [{"id":"$item","name":"Flour","quantity":5}]
 
 ```
@@ -307,7 +317,7 @@ Queries (read only):
 
 **Request**
 
-> A venue operator creates rooms with a nonblank name and capacity 1–100. Registered guests may book a room on a YYYY-MM-DD date in either the morning or afternoon slot. A room/date/slot can be booked only once. A guest may cancel only their own booking, which frees the slot. Guests see only their bookings, sorted by date, slot, then id. Dates need only have the stated character shape, not calendar validity.
+> A venue operator creates rooms with a nonblank name and capacity 1–100. Registered guests may book a room on a YYYY-MM-DD date in either the morning or afternoon slot. A room/date/slot can be booked only once. A guest may cancel only their own booking, which frees the slot. Guests see only their bookings, sorted by date, then morning before afternoon, then id. Dates need only have the stated character shape, not calendar validity.
 
 **Contract**
 
@@ -316,6 +326,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -330,7 +341,7 @@ Rules (they may change state):
     rejects with Denied when not owner
 
 Queries (read only):
-- POST /queries/MyBookings  args: []  returns: List of { id: Id, room: Id, date: Text, slot: Text }, sorted date, slot, id  allowed: registered caller
+- POST /queries/MyBookings  args: []  returns: List of { id: Id, room: Id, date: Text, slot: Text }, sorted by date, then morning before afternoon, then id  allowed: registered caller
 ```
 
 **Tests**
@@ -358,10 +369,13 @@ Queries (read only):
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
   POST /rules/Register ["Ben"] as the operator -> status 200 (value saved as $ben)
   POST /rules/CreateRoom ["Hall",10] as the operator -> status 200 (value saved as $room)
-  POST /rules/Book ["$room","2026-11-01","morning"] as $ana -> status 200
+  POST /rules/Book ["$room","2026-11-01","morning"] as $ana -> status 200 (value saved as $am)
   POST /rules/Book ["$room","2026-11-01","afternoon"] as $ben -> status 200
   POST /queries/MyBookings [] as $ana -> status 200, a list of 1
   POST /queries/MyBookings [] as $ben -> status 200, a list of 1
+  POST /rules/Book ["$room","2026-11-02","afternoon"] as $ana -> status 200 (value saved as $pm2)
+  POST /rules/Book ["$room","2026-11-02","morning"] as $ana -> status 200 (value saved as $am2)
+  POST /queries/MyBookings [] as $ana -> status 200, value [{"id":"$am","room":"$room","date":"2026-11-01","slot":"morning"},{"id":"$am2","room":"$room","date":"2026-11-02","slot":"morning"},{"id":"$pm2","room":"$room","date":"2026-11-02","slot":"afternoon"}]
 
 [hidden]  bad bookings
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
@@ -381,7 +395,7 @@ Queries (read only):
 
 **Request**
 
-> An operator registers people. A person creates habits with nonblank names no longer than 40 characters. They can log a completed day in YYYY-MM-DD form at most once per habit, and erase a logged day. Removing a day that was never logged is NotFound. The owner sees only their own habits and their count of distinct completed days, sorted by name then id. Dates only require the stated shape.
+> An operator registers people. A person creates habits with nonblank titles no longer than 40 characters. They can log a completed day in YYYY-MM-DD form at most once per habit, and erase a logged day. Removing a day that was never logged is NotFound. The owner sees only their own habits and their count of distinct completed days, sorted by title then id. Dates only require the stated shape.
 
 **Contract**
 
@@ -390,6 +404,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -444,6 +459,7 @@ Queries (read only):
   POST /rules/CreateHabit ["Read"] as $ana -> status 200 (value saved as $habit)
   POST /rules/LogDay ["$habit","11-01"] as $ana -> status 400
   POST /rules/LogDay ["missing","2026-11-01"] as $ana -> status 404
+  POST /rules/CreateHabit ["$title41"] as $ana -> status 400
 
 ```
 
@@ -453,7 +469,7 @@ Queries (read only):
 
 **Request**
 
-> An operator registers people. A person creates a team and becomes its owner and member. Only the owner can add registered people as members; adding an existing member is harmless. Members can create pages with titles of 1–80 nonblank characters and read pages in their team. Only the page author or team owner can rename a page. Outsiders cannot see pages.
+> An operator registers people. A person creates a team with a nonblank name and becomes its owner and member. Only the owner can add registered people as members; adding an existing member is harmless. Members can create pages with titles of 1–80 nonblank characters and read pages in their team. Only the page author or team owner can rename a page. Outsiders cannot see pages.
 
 **Contract**
 
@@ -462,6 +478,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -495,6 +512,7 @@ Queries (read only):
   POST /rules/Register ["Ben"] as the operator -> status 200 (value saved as $ben)
   POST /rules/CreateTeam ["Design"] as $ana -> status 200 (value saved as $team)
   POST /rules/AddMember ["$team","$ben"] as $ana -> status 200
+  POST /rules/AddMember ["$team","$ben"] as $ana -> status 200
   POST /rules/CreatePage ["$team","Plan"] as $ben -> status 200 (value saved as $page)
   POST /queries/ReadPage ["$page"] as $ana -> status 200, value {"title":"Plan","team":"$team"}
 
@@ -517,7 +535,8 @@ Queries (read only):
   POST /rules/CreatePage ["$team","Draft"] as $ben -> status 200 (value saved as $page)
   POST /rules/RenamePage ["$page","No"] as $cal -> status 403
   POST /rules/RenamePage ["$page","Final"] as $ana -> status 200
-  POST /queries/ReadPage ["$page"] as $ben -> status 200, value {"title":"Final","team":"$team"}
+  POST /rules/RenamePage ["$page","Mine"] as $ben -> status 200
+  POST /queries/ReadPage ["$page"] as $ben -> status 200, value {"title":"Mine","team":"$team"}
 
 [hidden]  missing and validation
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
@@ -543,6 +562,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -582,6 +602,7 @@ Queries (read only):
   POST /rules/Assign ["$ticket","$ben"] as $ana -> status 403
   POST /rules/Close ["$ticket"] as $ben -> status 403
   POST /queries/ReadTicket ["$ticket"] as $ana -> status 200, value {"subject":"Issue","status":"open","agent":null}
+  POST /rules/Register ["Eve"] as $ana -> status 403
 
 [hidden]  repeat close
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
@@ -596,8 +617,9 @@ Queries (read only):
 [hidden]  bad inputs
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
   POST /rules/OpenTicket [" "] as $ana -> status 400
+  POST /rules/OpenTicket ["$subject101"] as $ana -> status 400
   POST /rules/OpenTicket ["Hi"] with no caller -> status 403
-  POST /rules/Assign ["missing","unknown"] as the operator -> status 404
+  POST /rules/Assign ["missing","$ana"] as the operator -> status 404
   POST /queries/ReadTicket ["missing"] as $ana -> status 404
 
 ```
@@ -617,6 +639,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -698,6 +721,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -732,6 +756,9 @@ Queries (read only):
   POST /rules/Invite ["$list","$ben"] as $ana -> status 200
   POST /rules/AddItem ["$list","Milk"] as $ben -> status 200 (value saved as $item)
   POST /queries/ListItems ["$list"] as $ana -> status 200, value [{"id":"$item","name":"Milk"}]
+  POST /rules/AddItem ["$list","Bread"] as $ana -> status 200 (value saved as $bread)
+  POST /rules/AddItem ["$list","Apple"] as $ana -> status 200 (value saved as $apple)
+  POST /queries/ListItems ["$list"] as $ana -> status 200, value [{"id":"$apple","name":"Apple"},{"id":"$bread","name":"Bread"},{"id":"$item","name":"Milk"}]
 
 [hidden]  outsider cannot read
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
@@ -752,6 +779,9 @@ Queries (read only):
   POST /rules/RemoveItem ["$item"] as $cal -> status 403
   POST /rules/RemoveItem ["$item"] as $ana -> status 200
   POST /queries/ListItems ["$list"] as $ben -> status 200, value []
+  POST /rules/AddItem ["$list","Tea"] as $ben -> status 200 (value saved as $tea)
+  POST /rules/RemoveItem ["$tea"] as $ben -> status 200
+  POST /queries/ListItems ["$list"] as $ana -> status 200, value []
 
 [hidden]  validation and missing
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
@@ -760,6 +790,7 @@ Queries (read only):
   POST /rules/Invite ["$list","missing"] as $ana -> status 404
   POST /rules/AddItem ["$list"," "] as $ana -> status 400
   POST /rules/RemoveItem ["missing"] as $ana -> status 404
+  POST /rules/AddItem ["$list","$item61"] as $ana -> status 400
 
 ```
 
@@ -778,6 +809,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -844,6 +876,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -905,6 +938,10 @@ Queries (read only):
   POST /rules/Buy ["$event",1] with no caller -> status 403
   POST /rules/CreateEvent ["Show",2,2] as $ana -> status 403
   POST /queries/Remaining ["missing"] with no caller -> status 404
+  POST /rules/CreateEvent ["Show",0,5] as the operator -> status 400
+  POST /rules/CreateEvent ["Show",5,1001] as the operator -> status 400
+  POST /rules/CreateEvent ["Empty",5,0] as the operator -> status 200 (value saved as $empty)
+  POST /rules/Buy ["$empty",1] as $ana -> status 409, reason SoldOut
 
 ```
 
@@ -923,6 +960,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -995,6 +1033,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -1055,6 +1094,7 @@ Queries (read only):
   POST /rules/PayInvoice ["$inv",10] as $ana -> status 200
   POST /rules/Refund ["$inv",1] as $ana -> status 403
   POST /rules/PayInvoice ["$inv",0] as $ana -> status 400
+  POST /rules/Register ["Eve"] as $ana -> status 403
 
 ```
 
@@ -1073,6 +1113,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -1105,6 +1146,8 @@ Queries (read only):
   POST /rules/RequestLeave [3,"Trip"] as $ana -> status 200 (value saved as $req)
   POST /queries/LeaveStatus ["$req"] as $ana -> status 200, value "pending"
   POST /rules/Approve ["$req"] as the operator -> status 200
+  POST /queries/LeaveStatus ["$req"] as $ana -> status 200, value "approved"
+  POST /rules/Withdraw ["$req"] as $ana -> status 409, reason WrongState
   POST /queries/LeaveStatus ["$req"] as $ana -> status 200, value "approved"
 
 [hidden]  withdraw then cannot approve
@@ -1149,6 +1192,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -1179,6 +1223,8 @@ Queries (read only):
   POST /rules/CreateShipment ["$ana"] as the operator -> status 200 (value saved as $ship)
   POST /rules/Advance ["$ship","packed"] as the operator -> status 200
   POST /rules/Advance ["$ship","shipped"] as the operator -> status 200
+  POST /rules/CancelShipment ["$ship"] as $ana -> status 409, reason WrongState
+  POST /queries/Track ["$ship"] as $ana -> status 200, value "shipped"
   POST /rules/Advance ["$ship","delivered"] as the operator -> status 200
   POST /queries/Track ["$ship"] as $ana -> status 200, value "delivered"
 
@@ -1225,6 +1271,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/Register  args: [name: Text]  returns: Id  allowed: operator only
@@ -1271,7 +1318,7 @@ Queries (read only):
   POST /rules/Moderate ["$r3",true] as the operator -> status 200
   POST /queries/PublicReviews [] with no caller -> status 200, value [{"stars":5,"message":"Alpha"},{"stars":5,"message":"Zoo"},{"stars":3,"message":"Okay"}]
   POST /rules/DeleteReview ["$r2"] as $ana -> status 200
-  POST /queries/PublicReviews [] with no caller -> status 200, a list of 2
+  POST /queries/PublicReviews [] with no caller -> status 200, value [{"stars":5,"message":"Alpha"},{"stars":3,"message":"Okay"}]
 
 [hidden]  operator and owner only
   POST /rules/Register ["Ana"] as the operator -> status 200 (value saved as $ana)
@@ -1300,6 +1347,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 
@@ -1325,6 +1373,8 @@ Queries (read only):
 [hidden]  empty and case
   POST /queries/CountWords ["","hello"] with no caller -> status 200, value 0
   POST /queries/CountWords ["Mix MIX mix","mIx"] with no caller -> status 200, value 3
+  POST /queries/CountWords ["$a1000","a"] with no caller -> status 200, value 0
+  POST /queries/CountWords ["$a1001","a"] with no caller -> status 400
 
 [hidden]  invalid terms
   POST /queries/CountWords ["sample",""] with no caller -> status 400
@@ -1349,6 +1399,7 @@ Every call is an HTTP POST with a JSON body {"args": [...]}, arguments in the or
 The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.
 Ids are strings. Responses: {"outcome": "ok", "value": ...} with status 200, or {"outcome": "rejected", "reason": ...}.
 Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.
+Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; "or null" means the value may be null.
 
 Rules (they may change state):
 - POST /rules/AddRoad  args: [from: Text, to: Text, minutes: Int]  returns: nothing  allowed: operator only
@@ -1376,6 +1427,7 @@ Queries (read only):
   POST /queries/Shortest ["B","A"] with no caller -> status 409, reason NoRoute
   POST /queries/Shortest ["A","A"] with no caller -> status 200, value 0
   POST /queries/Shortest ["A","B"] with no caller -> status 200, value 7
+  POST /queries/Shortest ["Zed","Zed"] with no caller -> status 200, value 0
 
 [hidden]  parallel roads and cycles
   POST /rules/AddRoad ["A","B",12] as the operator -> status 200

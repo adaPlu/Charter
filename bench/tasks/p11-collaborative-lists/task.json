@@ -183,6 +183,54 @@
               }
             ]
           }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "$list",
+            "Bread"
+          ],
+          "as": "$ana",
+          "save": "bread",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "$list",
+            "Apple"
+          ],
+          "as": "$ana",
+          "save": "apple",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ListItems",
+          "args": [
+            "$list"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$apple",
+                "name": "Apple"
+              },
+              {
+                "id": "$bread",
+                "name": "Bread"
+              },
+              {
+                "id": "$item",
+                "name": "Milk"
+              }
+            ]
+          }
         }
       ]
     },
@@ -368,6 +416,39 @@
             "status": 200,
             "value": []
           }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "$list",
+            "Tea"
+          ],
+          "as": "$ben",
+          "save": "tea",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/RemoveItem",
+          "args": [
+            "$tea"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/ListItems",
+          "args": [
+            "$list"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": []
+          }
         }
       ]
     },
@@ -437,9 +518,25 @@
           "expect": {
             "status": 404
           }
+        },
+        {
+          "call": "rules/AddItem",
+          "args": [
+            "$list",
+            "$item61"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
         }
       ]
     }
   ],
-  "constants": {}
+  "constants": {
+    "item61": {
+      "repeat": "a",
+      "times": 61
+    }
+  }
 }

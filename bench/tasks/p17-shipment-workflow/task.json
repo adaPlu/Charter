@@ -139,6 +139,28 @@
           }
         },
         {
+          "call": "rules/CancelShipment",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "WrongState"
+          }
+        },
+        {
+          "call": "queries/Track",
+          "args": [
+            "$ship"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": "shipped"
+          }
+        },
+        {
           "call": "rules/Advance",
           "args": [
             "$ship",

@@ -32,7 +32,7 @@ const app: App = { rules: {
   MyBookings(ctx: Ctx) {
     const owner=person(ctx);
     return ctx.db.all("Booking").filter(x=>x.record.owner===owner)
-      .sort((a,b)=> {const da=(a.record.date as string),db=(b.record.date as string),sa=(a.record.slot as string),sb=(b.record.slot as string);return da<db?-1:da>db?1:sa<sb?-1:sa>sb?1:a.id<b.id?-1:a.id>b.id?1:0;})
+      .sort((a,b)=> {const da=(a.record.date as string),db=(b.record.date as string),sa=(a.record.slot==="morning"?0:1),sb=(b.record.slot==="morning"?0:1);return da<db?-1:da>db?1:sa<sb?-1:sa>sb?1:a.id<b.id?-1:a.id>b.id?1:0;})
       .map(x=>({id:x.id,room:x.record.room,date:x.record.date,slot:x.record.slot}));
   }
 } }; export default app;

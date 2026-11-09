@@ -234,6 +234,18 @@
           "expect": {
             "status": 400
           }
+        },
+        {
+          "call": "queries/FinalGrade",
+          "args": [
+            [
+              -1
+            ],
+            0
+          ],
+          "expect": {
+            "status": 400
+          }
         }
       ]
     }

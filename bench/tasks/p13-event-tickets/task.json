@@ -430,6 +430,55 @@
           "expect": {
             "status": 404
           }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Show",
+            0,
+            5
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Show",
+            5,
+            1001
+          ],
+          "system": true,
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/CreateEvent",
+          "args": [
+            "Empty",
+            5,
+            0
+          ],
+          "system": true,
+          "save": "empty",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Buy",
+          "args": [
+            "$empty",
+            1
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "SoldOut"
+          }
         }
       ]
     }

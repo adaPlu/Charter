@@ -3,7 +3,7 @@
   "family": "F3",
   "validationOnly": false,
   "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
-  "request": "An operator registers people. A person creates a team and becomes its owner and member. Only the owner can add registered people as members; adding an existing member is harmless. Members can create pages with titles of 1–80 nonblank characters and read pages in their team. Only the page author or team owner can rename a page. Outsiders cannot see pages.",
+  "request": "An operator registers people. A person creates a team with a nonblank name and becomes its owner and member. Only the owner can add registered people as members; adding an existing member is harmless. Members can create pages with titles of 1–80 nonblank characters and read pages in their team. Only the page author or team owner can rename a page. Outsiders cannot see pages.",
   "contract": {
     "rules": [
       {
@@ -146,6 +146,17 @@
           ],
           "as": "$ana",
           "save": "team",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/AddMember",
+          "args": [
+            "$team",
+            "$ben"
+          ],
+          "as": "$ana",
           "expect": {
             "status": 200
           }
@@ -376,6 +387,17 @@
           }
         },
         {
+          "call": "rules/RenamePage",
+          "args": [
+            "$page",
+            "Mine"
+          ],
+          "as": "$ben",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
           "call": "queries/ReadPage",
           "args": [
             "$page"
@@ -384,7 +406,7 @@
           "expect": {
             "status": 200,
             "value": {
-              "title": "Final",
+              "title": "Mine",
               "team": "$team"
             }
           }

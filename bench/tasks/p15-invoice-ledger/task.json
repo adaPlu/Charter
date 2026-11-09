@@ -414,6 +414,16 @@
           "expect": {
             "status": 400
           }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Eve"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
         }
       ]
     }

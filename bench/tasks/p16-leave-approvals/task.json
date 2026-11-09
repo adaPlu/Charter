@@ -162,6 +162,28 @@
             "status": 200,
             "value": "approved"
           }
+        },
+        {
+          "call": "rules/Withdraw",
+          "args": [
+            "$req"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 409,
+            "reason": "WrongState"
+          }
+        },
+        {
+          "call": "queries/LeaveStatus",
+          "args": [
+            "$req"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": "approved"
+          }
         }
       ]
     },

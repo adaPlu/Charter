@@ -34,4 +34,4 @@ rule Cancel(booking: Booking)
   delete booking
 
 query MyBookings(): List<BookingView> permit anyone =
-  select { id = b.id, room = b.room, date = b.date, slot = b.slot } for b in Booking where b.owner == caller.id order by b.date, b.slot, b.id
+  select { id = b.id, room = b.room, date = b.date, slot = b.slot } for b in Booking where b.owner == caller.id order by b.date, (if b.slot == "morning" then 0 else 1), b.id

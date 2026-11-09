@@ -3,7 +3,7 @@
   "family": "F2",
   "validationOnly": false,
   "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
-  "request": "A venue operator creates rooms with a nonblank name and capacity 1–100. Registered guests may book a room on a YYYY-MM-DD date in either the morning or afternoon slot. A room/date/slot can be booked only once. A guest may cancel only their own booking, which frees the slot. Guests see only their bookings, sorted by date, slot, then id. Dates need only have the stated character shape, not calendar validity.",
+  "request": "A venue operator creates rooms with a nonblank name and capacity 1–100. Registered guests may book a room on a YYYY-MM-DD date in either the morning or afternoon slot. A room/date/slot can be booked only once. A guest may cancel only their own booking, which frees the slot. Guests see only their bookings, sorted by date, then morning before afternoon, then id. Dates need only have the stated character shape, not calendar validity.",
   "contract": {
     "rules": [
       {
@@ -80,7 +80,7 @@
       {
         "name": "MyBookings",
         "params": [],
-        "returns": "List of { id: Id, room: Id, date: Text, slot: Text }, sorted date, slot, id",
+        "returns": "List of { id: Id, room: Id, date: Text, slot: Text }, sorted by date, then morning before afternoon, then id",
         "who": "registered caller",
         "rejects": {}
       }
@@ -291,7 +291,8 @@
           "as": "$ana",
           "expect": {
             "status": 200
-          }
+          },
+          "save": "am"
         },
         {
           "call": "rules/Book",
@@ -321,6 +322,60 @@
           "expect": {
             "status": 200,
             "length": 1
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-02",
+            "afternoon"
+          ],
+          "as": "$ana",
+          "save": "pm2",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "rules/Book",
+          "args": [
+            "$room",
+            "2026-11-02",
+            "morning"
+          ],
+          "as": "$ana",
+          "save": "am2",
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "call": "queries/MyBookings",
+          "args": [],
+          "as": "$ana",
+          "expect": {
+            "status": 200,
+            "value": [
+              {
+                "id": "$am",
+                "room": "$room",
+                "date": "2026-11-01",
+                "slot": "morning"
+              },
+              {
+                "id": "$am2",
+                "room": "$room",
+                "date": "2026-11-02",
+                "slot": "morning"
+              },
+              {
+                "id": "$pm2",
+                "room": "$room",
+                "date": "2026-11-02",
+                "slot": "afternoon"
+              }
+            ]
           }
         }
       ]

@@ -120,6 +120,27 @@
             "status": 200,
             "value": 3
           }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "$a1000",
+            "a"
+          ],
+          "expect": {
+            "status": 200,
+            "value": 0
+          }
+        },
+        {
+          "call": "queries/CountWords",
+          "args": [
+            "$a1001",
+            "a"
+          ],
+          "expect": {
+            "status": 400
+          }
         }
       ]
     },
@@ -169,5 +190,14 @@
       ]
     }
   ],
-  "constants": {}
+  "constants": {
+    "a1000": {
+      "repeat": "a",
+      "times": 1000
+    },
+    "a1001": {
+      "repeat": "a",
+      "times": 1001
+    }
+  }
 }

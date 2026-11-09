@@ -370,6 +370,28 @@
           }
         },
         {
+          "call": "rules/AddItem",
+          "args": [
+            "Oil",
+            101
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/Restock",
+          "args": [
+            "$item",
+            101
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
           "call": "queries/MyStock",
           "args": [],
           "as": "$ana",

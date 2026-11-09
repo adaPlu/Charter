@@ -245,6 +245,16 @@
               "agent": null
             }
           }
+        },
+        {
+          "call": "rules/Register",
+          "args": [
+            "Eve"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 403
+          }
         }
       ]
     },
@@ -370,6 +380,16 @@
         {
           "call": "rules/OpenTicket",
           "args": [
+            "$subject101"
+          ],
+          "as": "$ana",
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "rules/OpenTicket",
+          "args": [
             "Hi"
           ],
           "expect": {
@@ -380,7 +400,7 @@
           "call": "rules/Assign",
           "args": [
             "missing",
-            "unknown"
+            "$ana"
           ],
           "system": true,
           "expect": {
@@ -400,5 +420,10 @@
       ]
     }
   ],
-  "constants": {}
+  "constants": {
+    "subject101": {
+      "repeat": "a",
+      "times": 101
+    }
+  }
 }

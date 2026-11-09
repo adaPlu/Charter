@@ -59,6 +59,7 @@ export function contractText(t: Task): string {
     "The signed-in caller is the id in the X-Charter-Caller header; an operator's system call has X-Charter-System: true.",
     "Ids are strings. Responses: {\"outcome\": \"ok\", \"value\": ...} with status 200, or {\"outcome\": \"rejected\", \"reason\": ...}.",
     "Statuses: ValidationError 400, Denied 403 (404 for queries), NotFound 404, any other rejection 409.",
+    "Types, in JSON terms: Text is a string, Int a whole number, Bool true or false, Id a string id, Record { ... } an object with those fields, List of ... an array; \"or null\" means the value may be null.",
     "",
     "Rules (they may change state):",
     ...t.contract.rules.map((e) => endpointText("rules", e)),
