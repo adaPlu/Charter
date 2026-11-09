@@ -194,3 +194,18 @@ query D(r: {n: Score}): Int permit anyone = 1
   assert.equal(q("D", "{n = 101}"), "Rejected  ValidationError(r)");
   assert.equal(q("D", "{n = 1}"), "Ok  1");
 });
+
+test("A27: fn recursion is allowed and capped at 250 nested calls, as a fault rather than a crash", () => {
+  // Before A27, runaway recursion overflowed the host stack and crashed the process.
+  const i = run(`module rec@0.1.0
+fn deep(n: Int): Int = if n <= 0 then 0 else 1 + deep(n - 1)
+fn spin(n: Int): Int = spin(n + 1)
+query D(n: Int): Int permit public = deep(n)
+query S(): Int permit public = spin(0)
+`);
+  const d = (n: number) => showOutcome(i.callQuery("D", [arg(i, String(n))]));
+  assert.equal(d(249), "Ok  249");                 // 250 nested calls
+  assert.match(d(250), /^Fault  recursion: function calls nested more than 250 deep/);
+  assert.match(showOutcome(i.callQuery("S", [])), /^Fault  recursion: function calls nested more than 250 deep, in spin/);
+  assert.equal(d(3), "Ok  3");                     // the depth count recovers after a fault
+});

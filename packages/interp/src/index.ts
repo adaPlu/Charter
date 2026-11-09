@@ -39,6 +39,9 @@ export interface StepResult {
 
 export class NotYet extends Error {}
 
+/** A27: the deepest nesting of fn calls in one evaluation; one more is a "recursion" fault. */
+export const MAX_FN_DEPTH = 250;
+
 type Env = Map<string, Value>;
 type Rec = Map<string, Value>;
 
@@ -277,17 +280,34 @@ export function interpreter(p: Program, c: CheckResult, opts: InterpOptions = {}
     return inner;
   };
 
+  // A27: a fn may recurse without restriction, so a step still ends because nested fn calls
+  // are capped. The cap is a fixed number, not the host's stack size, so every machine and
+  // every replay faults at the same point.
+  let fnDepth = 0;
   const callFn = (name: string, args: Value[]): Value => {
     const sig = c.sigs.get(name)!;
     const d = sig.decl;
     if (d.kind !== "FnDecl") throw new NotYet(`${name} is an extern fn; extern functions are bound to host code from milestone 5`);
+    if (fnDepth >= MAX_FN_DEPTH) throw new Fault("recursion", `function calls nested more than ${MAX_FN_DEPTH} deep, in ${name}`);
     const env: Env = new Map();
     sig.params.forEach((prm, i) => {
       const v = coerce(args[i]!, prm.type.ty);
       if (!conforms(d.params[i]!.type, v)) throw new Fault("refinement", `argument ${prm.name} = ${show(v)} breaks the refinement of ${name}`);
       env.set(prm.name, v);
     });
-    const out = coerce(evalExpr(d.body, env, pure()), sig.ret.ty);
+    fnDepth++;
+    let body: Value;
+    try {
+      body = evalExpr(d.body, env, pure());
+    } catch (err) {
+      // A backstop: if the host stack runs out before the cap, fault instead of crashing. Near the
+      // limit even this check can overflow; the RangeError then reaches the next frame out.
+      if (err instanceof RangeError && err.message.includes("call stack")) throw new Fault("recursion", "function calls nested too deep for the host stack");
+      throw err;
+    } finally {
+      fnDepth--;
+    }
+    const out = coerce(body, sig.ret.ty);
     if (!satisfies(sig.ret.preds, out)) throw new Fault("refinement", `${name} returned ${show(out)}, which breaks its refined return type`);
     return out;
   };

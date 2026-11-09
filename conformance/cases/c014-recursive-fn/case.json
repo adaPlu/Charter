@@ -1,0 +1,9 @@
+{
+  "title": "a fn may call itself",
+  "source": "Amendment A27, from H1 pilot tasks p19 and p21",
+  "covers": ["A27"],
+  "expect": {
+    "parse": "ok",
+    "check": { "errors": [], "warnings": [], "tests": { "pass": 2, "fail": 0, "skip": 0 } }
+  }
+}

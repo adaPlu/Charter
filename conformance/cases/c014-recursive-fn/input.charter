@@ -1,0 +1,20 @@
+// Amendment A27: a fn may call itself without restriction, including on a value that grows,
+// such as a Text being padded. Nested fn calls are capped at 250; the 251st is a "recursion"
+// fault (covered by the interpreter's own tests, since a test block cannot expect a fault).
+// Found by the H1 pilot tasks p19 and p21, whose references read Text by recursion.
+module padding@0.1.0
+
+fn pad(t: Text, width: Int): Text = if len(t) >= width then t else pad("0" + t, width)
+
+type Code = Text where len(it) <= 6 and pad(it, 6) != "000000"
+
+query Padded(c: Code): Text permit public = pad(c, 6)
+
+test "a recursive fn pads a code" {
+  when Padded("42") expect ok
+  then result == "000042"
+}
+
+test "a recursive fn inside a refinement rejects an all-zero code" {
+  when Padded("00") expect reject ValidationError
+}
