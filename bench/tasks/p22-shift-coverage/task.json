@@ -1,0 +1,489 @@
+{
+  "id": "p22-shift-coverage",
+  "family": "F6",
+  "validationOnly": false,
+  "authoredBy": "AI-assisted pilot draft (2026-11-09), written without reading the new language's design; not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "request": "A café manager checks a day's staff rota with a public tool. Each shift has a start and an end in whole minutes after midnight, with 0 ≤ start < end ≤ 1440. A shift covers every minute from its start up to but not including its end, so a shift ending at 600 and another starting at 600 do not overlap. Given a list of 0–20 shifts, in any order, the tool reports covered, the number of minutes of the day covered by at least one shift, and peak, the largest number of shifts covering any single minute. Identical shifts may appear and each one counts. With no shifts, both numbers are 0. More than 20 shifts, or any shift breaking the limits above, is a ValidationError.",
+  "contract": {
+    "rules": [],
+    "queries": [
+      {
+        "name": "Coverage",
+        "params": [
+          [
+            "shifts",
+            "List of { start: Int, end: Int }"
+          ]
+        ],
+        "returns": "Record { covered: Int, peak: Int }",
+        "who": "anyone",
+        "rejects": {
+          "ValidationError": "more than 20 shifts, or a shift with start below 0, end above 1440, or start not before end"
+        }
+      }
+    ]
+  },
+  "visibleTests": [
+    "basic coverage"
+  ],
+  "tests": [
+    {
+      "name": "basic coverage",
+      "steps": [
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 540,
+                "end": 720
+              },
+              {
+                "start": 600,
+                "end": 780
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 240,
+              "peak": 2
+            }
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            []
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 0,
+              "peak": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "touching, gaps and nesting",
+      "steps": [
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 0,
+                "end": 60
+              },
+              {
+                "start": 60,
+                "end": 120
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 120,
+              "peak": 1
+            }
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 300,
+                "end": 400
+              },
+              {
+                "start": 100,
+                "end": 200
+              },
+              {
+                "start": 150,
+                "end": 160
+              },
+              {
+                "start": 120,
+                "end": 350
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 300,
+              "peak": 3
+            }
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 700,
+                "end": 800
+              },
+              {
+                "start": 100,
+                "end": 130
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 130,
+              "peak": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "limits and repeats",
+      "steps": [
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 0,
+                "end": 1440
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 1440,
+              "peak": 1
+            }
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 1439,
+                "end": 1440
+              },
+              {
+                "start": 0,
+                "end": 1
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 2,
+              "peak": 1
+            }
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 10,
+                "end": 20
+              },
+              {
+                "start": 10,
+                "end": 20
+              },
+              {
+                "start": 15,
+                "end": 25
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 15,
+              "peak": 3
+            }
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              }
+            ]
+          ],
+          "expect": {
+            "status": 200,
+            "value": {
+              "covered": 60,
+              "peak": 20
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid shifts",
+      "steps": [
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": -1,
+                "end": 60
+              }
+            ]
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 0,
+                "end": 1441
+              }
+            ]
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 60,
+                "end": 60
+              }
+            ]
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 90,
+                "end": 60
+              }
+            ]
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 0,
+                "end": 60
+              },
+              {
+                "start": 70,
+                "end": 65
+              }
+            ]
+          ],
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "call": "queries/Coverage",
+          "args": [
+            [
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              },
+              {
+                "start": 480,
+                "end": 540
+              }
+            ]
+          ],
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ],
+  "constants": {}
+}

@@ -1,9 +1,12 @@
 module courses@0.1.0
 principal Person
 
-// A query can only reject through its entity parameters (NotFound) or its permit (Denied, which
-// HTTP reports as 404 for queries). MyAnswer therefore folds "enrolled but no answer" into its
-// permit: the status is 404 as required, but the reason is Denied rather than NotFound.
+// BLOCKED: the request says an enrolled student with no answer gets NotFound, and the test checks
+// that reason. A query can only reject through its entity parameters (NotFound) or its permit
+// (Denied, which HTTP reports as 404 for queries). MyAnswer therefore folds "enrolled but no
+// answer" into its permit: the status is 404 as required, but the reason is Denied, so this
+// reference fails that step. The project owner chose to check the reason and accept the
+// failure (November 9, 2026), as with p20.
 entity Person { name: Text }
 type Code = Text where len(trim(it)) >= 1
 type Answer = Text where len(trim(it)) >= 1 and len(it) <= 200

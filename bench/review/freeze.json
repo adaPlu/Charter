@@ -1,6 +1,6 @@
 {
-  "sha256": "5f4c785cba716b0f896f6b9d90b580fb27fbc2ee801c7049f15d35e3e3b7c5b6",
+  "sha256": "c37897d3afa7a2e6d626ba17748710cf3599311a49d69dfd00fca4fb8c0c79cb",
   "frozenOn": "2026-11-09",
-  "tasks": 20,
-  "reason": "Given to the independent human reviewer, after the AI pre-review of 2026-11-09 (docs/pilot/ai-prereview-2026-11-09.md)"
+  "tasks": 22,
+  "reason": "p10 step 7 now checks reason NotFound; F6 tasks p21-release-versions and p22-shift-coverage added (owner's decisions, 2026-11-09), before the packet went to the reviewer"
 }

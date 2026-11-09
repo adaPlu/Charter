@@ -1,0 +1,44 @@
+module releases@0.1.0
+
+// Charter cannot index or split Text, but it can compare Text in code-unit order. A text s that
+// starts with the known prefix p has c as its next character exactly when p + c <= s < p + c',
+// where c' is the character right after c. So a version is read one character at a time.
+type Step = { c: Text, n: Text }
+
+fn alphabet(): List<Step> =
+  [{ c = "0", n = "1" }, { c = "1", n = "2" }, { c = "2", n = "3" }, { c = "3", n = "4" },
+   { c = "4", n = "5" }, { c = "5", n = "6" }, { c = "6", n = "7" }, { c = "7", n = "8" },
+   { c = "8", n = "9" }, { c = "9", n = ":" }, { c = ".", n = "/" }]
+
+// The character of s after its prefix p: "" at the end, "?" for anything not a digit or a dot.
+fn firstOf(found: List<Text>): Text = if len(found) == 0 then "?" else found[0]
+
+fn nextChar(s: Text, p: Text): Text =
+  if s == p then "" else firstOf(select r.c for r in alphabet() where p + r.c <= s and s < p + r.n)
+
+// A part's digits, padded with leading zeros to 5, so equal numbers give equal text.
+fn pad5(t: Text): Text = if len(t) >= 5 then t else pad5("0" + t)
+
+// Adds "00000" parts until there are 4.
+fn fill(done: Text, parts: Int): Text = if parts >= 4 then done else fill(done + "00000", parts + 1)
+
+// The normalized version: 4 parts of 5 digits each, or "" when the version is not valid.
+// p is what has been read, digits the current part so far, done the finished parts normalized.
+fn readOn(s: Text, p: Text, digits: Text, done: Text, parts: Int): Text =
+  step(s, p, nextChar(s, p), digits, done, parts)
+
+fn step(s: Text, p: Text, ch: Text, digits: Text, done: Text, parts: Int): Text =
+  if ch == "?" then ""
+  else if ch == "" then (if len(digits) == 0 then "" else fill(done + pad5(digits), parts + 1))
+  else if ch == "." then (if len(digits) == 0 or parts >= 3 then "" else readOn(s, p + ".", "", done + pad5(digits), parts + 1))
+  else if len(digits) >= 5 then ""
+  else readOn(s, p + ch, digits + ch, done, parts)
+
+fn normal(v: Text): Text = readOn(v, "", "", "", 0)
+
+type Version = Text where normal(it) != ""
+
+query CompareVersions(first: Version, second: Version): Text permit public =
+  if normal(first) < normal(second) then "older"
+  else if normal(first) == normal(second) then "same"
+  else "newer"

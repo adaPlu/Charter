@@ -75,6 +75,17 @@ Six of 144 expected rejections broke two rules at once (p07, p10, p13, p15, p17,
 1. **p10, step 7.** The request says an enrolled student with no answer gets `NotFound`. The test checks only the 404 status. Charter cannot reject a query with `NotFound` on its own condition, so its reference answers `Denied` with the same status and passes. **The test is lenient in a way that favours Charter.** Checking the reason would make p10 fail in Charter, the same limit as p20. Either check it and accept the failure, or change the language as with A26.
 2. **Family balance (proposal 19).** Whether F6 should have more tasks.
 
+## After the pre-review: the owner's decisions (November 9)
+
+Both open decisions above were settled by the project owner before the packet went to the reviewer:
+
+1. **p10, step 7 now checks the reason** `NotFound`. The Charter reference answers `Denied` and fails that scenario; it is marked `// BLOCKED:`.
+2. **Two F6 tasks added:** p21-release-versions and p22-shift-coverage. One AI subagent (Claude Opus 5.5) drafted the requests, tests and TypeScript references **without reading anything about Charter**, and another wrote the Charter references afterwards. Neither task has been through the blind pre-review; the human reviewer sees them for the first time.
+
+Results after these changes: TypeScript 22 of 22 tasks, 88 of 88 scenarios; Charter 19 of 22 (p10, p19 and p20 fail). The packet was re-frozen as SHA-256 `c37897d3afa7…`.
+
+Writing p21's Charter reference also found that Text can be read character by character, so p19's claim that it cannot be passed is probably wrong, and that the model manual does not teach the technique. See the errata.
+
 ## Every changed file
 
 `bench/tasks/p02…p20/task.json` (16 tasks), `bench/tasks/p06-room-booking/reference.ts` and `reference.charter`, `bench/harness/tasks.ts` (the contract's type line), `bench/review/packet.md` and `freeze.json`. The diff is in the commit that added this page.

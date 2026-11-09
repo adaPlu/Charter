@@ -1,0 +1,27 @@
+module rota@0.1.0
+
+type Shift = { start: Int, end: Int }
+// The element limits are also stated on the list itself, because element refinements are not
+// enforced for list parameters by the current toolchain.
+type Shifts = List<Shift> where len(it) <= 20 and (forall s in it: s.start >= 0 and s.end <= 1440 and s.start < s.end)
+type CoverageView = { covered: Int, peak: Int }
+
+fn digits(): List<Int> = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+fn hundreds(): List<Int> = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+// Whether some shift covers the minute.
+fn onDuty(shifts: List<Shift>, minute: Int): Bool =
+  minute < 1440 and (exists a in shifts: a.start <= minute and minute < a.end)
+
+// Every minute of the day, as hundreds h, tens t and units u.
+fn covered(shifts: List<Shift>): Int =
+  sum (sum (count u in digits() where onDuty(shifts, h * 100 + t * 10 + u)) for t in digits()) for h in hundreds()
+
+// The most shifts on duty at once is reached at the start of some shift.
+fn atStart(shifts: List<Shift>): List<Int> =
+  select (count b in shifts where b.start <= x.start and x.start < b.end) for x in shifts order by 0 - (count b2 in shifts where b2.start <= x.start and x.start < b2.end)
+
+fn peak(shifts: List<Shift>): Int = if len(shifts) == 0 then 0 else atStart(shifts)[0]
+
+query Coverage(shifts: Shifts): CoverageView permit public =
+  { covered = covered(shifts), peak = peak(shifts) }

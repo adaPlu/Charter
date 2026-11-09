@@ -6,9 +6,9 @@ H1 asks whether models write valid Charter more often than valid TypeScript for 
 
 | Part | State |
 |---|---|
-| Harness: prompt, check, repair, hidden tests, analysis | Built and tested. The two validation-only tasks have references in both languages. The 20 draft pilot tasks have TypeScript reference solutions; a mock TypeScript verification passed all 80 black-box scenarios. The repair loop works. |
+| Harness: prompt, check, repair, hidden tests, analysis | Built and tested. The two validation-only tasks have references in both languages. The 22 draft pilot tasks have TypeScript reference solutions; a mock TypeScript verification passed all 88 black-box scenarios. The repair loop works. |
 | Backends | `mock` and `mock-repair` (no model), `ollama`, `llamacpp`, `anthropic` |
-| Tasks | **20 draft pilot tasks** across F1–F6, each with an HTTP contract, 4 black-box test scenarios, 1 visible example scenario, and a passing TypeScript reference; plus 2 separate validation-only tasks. These drafts await independent author and reviewer approval. |
+| Tasks | **22 draft pilot tasks** across F1–F6, each with an HTTP contract, 4 black-box test scenarios, 1 visible example scenario, and a passing TypeScript reference; plus 2 separate validation-only tasks. These drafts await independent author and reviewer approval. |
 | Smoke run with a real model | Done with `llama3.2:3b` through Ollama, on a CPU. All 4 runs completed with 3 repairs each, in 18 to 29 seconds per run. No program was valid in either language. That is expected at 3 billion parameters, and it shows only that the real-model path works. |
 | Pilot run | Not run. Needs the decisions below. |
 
@@ -87,11 +87,11 @@ The Anthropic backend pins the effort level and leaves refusal fallbacks off. A 
 
 Measured prompt sizes: about 1,000 tokens for TypeScript and 1,600 for Charter, of which the Charter manual is about 1,060. Estimated per run: about 3,000 input tokens across attempts, and 4,000 to 10,000 output tokens, mostly the model's thinking at high effort.
 
-| Model | Runs (20 tasks, 2 arms, 3 samples) | Estimate |
+| Model | Runs (22 tasks, 2 arms, 3 samples) | Estimate |
 |---|---|---|
-| Claude Opus 5.5 ($4 / $20 per million tokens) | 120 | about $10 to $25 |
-| Claude Sonnet 5.5 ($2 / $10) | 120 | about $5 to $13 |
-| Claude Haiku 5.5 ($0.10 / $0.50) | 120 | under $1 |
+| Claude Opus 5.5 ($4 / $20 per million tokens) | 132 | about $11 to $28 |
+| Claude Sonnet 5.5 ($2 / $10) | 132 | about $6 to $14 |
+| Claude Haiku 5.5 ($0.10 / $0.50) | 132 | under $1 |
 
 These are estimates. The harness records the real token counts of every run in `runs.jsonl`.
 
@@ -104,12 +104,14 @@ These are estimates. The harness records the real token counts of every run in `
 | F3 Authorization | p08-team-pages, p09-support-tickets, p10-course-submissions, p11-collaborative-lists | 16 |
 | F4 Transactions | p12-store-credit, p13-event-tickets, p14-loyalty-points, p15-invoice-ledger | 16 |
 | F5 Workflows | p16-leave-approvals, p17-shipment-workflow, p18-review-moderation | 12 |
-| F6 Outside sweet spot | p19-word-counting, p20-shortest-route | 8 |
-| **Total** | **20 tasks** | **80 scenarios** |
+| F6 Outside sweet spot | p19-word-counting, p20-shortest-route, p21-release-versions, p22-shift-coverage | 16 |
+| **Total** | **22 tasks** | **88 scenarios** |
 
-Each folder contains `task.json` and `reference.ts`. There are **80 scenarios in total**: `visibleTests` exposes one worked example for each task (20 visible examples), while the remaining **60 scenarios** stay hidden from model prompts and are evaluated by the harness. The no-model `mock` TypeScript run on November 6, 2026 reported **20/20 task successes and 80/80 scenario passes**, with all 20 reference programs passing `tsc --strict` on the first check. Results: `bench/results/pilot-reference-verified/runs.jsonl`. This verifies the TypeScript references, **not** that models have completed the pilot or that independent authorship is satisfied.
+Each folder contains `task.json` and `reference.ts`. There are **88 scenarios in total**: `visibleTests` exposes one worked example for each task (22 visible examples), while the remaining **66 scenarios** stay hidden from model prompts and are evaluated by the harness. The no-model `mock` TypeScript run on November 6, 2026 reported **20/20 task successes and 80/80 scenario passes**, with all 20 reference programs passing `tsc --strict` on the first check. Results: `bench/results/pilot-reference-verified/runs.jsonl`. After the November 9 edits and the two new F6 tasks, the re-run reported **22/22 and 88/88** (`bench/results/rev3-B/runs.jsonl`). This verifies the TypeScript references, **not** that models have completed the pilot or that independent authorship is satisfied.
 
-Each draft also has a `reference.charter`, written to check that the task can be passed in Charter at all. All 20 pass `charter check`. **18 pass every scenario, and 2 cannot:** p19 (no way to read inside text) and p20 (queries cannot reject with a custom reason). Both are family F6, deliberately outside Charter's design, and are kept unchanged so the pilot measures that cost. Each starts with a `// BLOCKED:` comment. p13 and p18 failed at first too, because a program with signed-in users could not offer a public query; amendment A26 (`permit public`) fixed the language rather than the tasks. The errata explain each one. Results: `bench/results/pilot-charter-reference/runs.jsonl`.
+Each draft also has a `reference.charter`, written to check that the task can be passed in Charter at all. All 22 pass `charter check`. **19 pass every scenario, and 3 do not:** p19 (its reference found no way to read inside text), p20 (queries cannot reject with a custom reason) and p10 (the same limit: an enrolled student with no answer must get `NotFound`, and Charter can only answer `Denied`). Each starts with a `// BLOCKED:` comment. p10 passed until November 9, when the project owner chose to make its test check the reason instead of only the 404 status, which had quietly favoured Charter. p13 and p18 failed at first too, because a program with signed-in users could not offer a public query; amendment A26 (`permit public`) fixed the language rather than the tasks. **p19 may in fact be passable:** writing p21 showed that Text can be read one character at a time by comparing prefixes in a recursive `fn`. Nobody has tried that on p19 yet. The errata explain each one. Results: `bench/results/rev3-C/runs.jsonl`.
+
+The two newest F6 tasks, p21 and p22, were added on November 9 because F6 had only 2 tasks. They were drafted by an AI subagent told not to read anything about Charter (`docs/`, `spec/`, `bench/manual/`, `packages/`, any `.charter` file), so the choice of task could not lean towards or away from it; a second subagent then wrote their Charter references.
 
 ## Writing a task
 

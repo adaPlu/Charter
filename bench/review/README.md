@@ -4,7 +4,7 @@ Thank you for reviewing these. This page is everything you need. It should take 
 
 ## What this is for
 
-Charter is a new programming language. The H1 pilot asks one question: do AI models write working Charter programs more often than working TypeScript programs, for the same task? Each of the 20 tasks in [packet.md](packet.md) is given to models in both languages, and the tests decide whether each program works.
+Charter is a new programming language. The H1 pilot asks one question: do AI models write working Charter programs more often than working TypeScript programs, for the same task? Each of the 22 tasks in [packet.md](packet.md) is given to models in both languages, and the tests decide whether each program works.
 
 The tasks were drafted with AI help by the people building Charter. That is a problem: whoever designs a language can, without meaning to, pick tasks that suit it. Your review is the safeguard. **You should not have worked on Charter's design**, and you should not look at any solution before you finish.
 
@@ -22,7 +22,7 @@ Read only [packet.md](packet.md), which shows each task exactly as a model would
 3. **One failure at a time.** A step that expects a rejection should break exactly one rule. If a call is both unauthorized *and* invalid, a correct program could reject it for either reason.
 4. **Is it fair to both languages?** The request should not use wording or structure that favours one language. Plain business words are fine even if a language reserves them.
 5. **Are the tests enough?** Would an obviously wrong program still pass? Name the gap.
-6. **Is the set balanced?** Across all 20: a spread of difficulty, nothing duplicated, and the six families each fairly represented.
+6. **Is the set balanced?** Across all 22: a spread of difficulty, nothing duplicated, and the six families each fairly represented.
 
 Statuses are fixed for all tasks: ValidationError 400, Denied 403 (404 when a query is refused), NotFound 404, anything else 409.
 

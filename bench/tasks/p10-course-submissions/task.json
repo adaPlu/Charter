@@ -249,7 +249,8 @@
           ],
           "as": "$ana",
           "expect": {
-            "status": 404
+            "status": 404,
+            "reason": "NotFound"
           }
         }
       ]
