@@ -68,4 +68,17 @@ A named `permission` can be used in a permit: `permit CanEdit(caller, i)`.
 
 `+ - * / %`, `== != < <= > >=` (comparisons do not chain: write `a == b and b == c`), `and or not`, `x ?? default` for optionals, `if c then a else b`, `match e { A => x, B(v) => y, _ => z }`, field access `x.f`, `E[id]` gives an optional record, list literals `[a, b]`, records `{ a = 1 }`, text concatenation with `+`. Built-ins: `len`, `trim`, `lower`, `upper`, `contains`, `abs`, `min`, `max`.
 
-Integer division by a value that could be zero is a compile error: guard it first, for example `guard n != 0 else reject DivideByZero`, or use `if n == 0 then … else … / n`.
+Integer division by a value that could be zero is a compile error: guard it first, for example `guard n != 0 else reject DivideByZero`, or use `if n == 0 then … else … / n`. `/` on `Int` rounds toward zero.
+
+`<`, `<=`, `>` and `>=` also compare `Text`, by character code, so `"Z" < "a"`, `"10" < "9"`, and a prefix comes first: `"ab" < "abc"`.
+
+## Functions
+
+```charter
+fn pad(t: Text, width: Int): Text = if len(t) >= width then t else pad("0" + t, width)
+type Code = Text where len(it) <= 6 and pad(it, 6) != "000000"
+```
+
+- `fn Name(params): Type = expr` declares a function over its arguments only: do not read stored records or use `caller` in it.
+- A function may call itself. Recursion is the only way to repeat work inside an expression.
+- Functions can be used anywhere an expression can, including in refinements and in `select`, `count` and `sum`.

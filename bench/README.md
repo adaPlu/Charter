@@ -85,7 +85,7 @@ The Anthropic backend pins the effort level and leaves refusal fallbacks off. A 
 
 ### Cost estimate
 
-Measured prompt sizes: about 1,000 tokens for TypeScript and 1,600 for Charter, of which the Charter manual is about 1,060. Estimated per run: about 3,000 input tokens across attempts, and 4,000 to 10,000 output tokens, mostly the model's thinking at high effort.
+Measured prompt sizes: about 1,000 tokens for TypeScript and 1,750 for Charter, of which the Charter manual is about 1,230 (it grew by about 170 tokens on November 9, when functions and text ordering were added). Estimated per run: about 3,000 input tokens across attempts, and 4,000 to 10,000 output tokens, mostly the model's thinking at high effort.
 
 | Model | Runs (22 tasks, 2 arms, 3 samples) | Estimate |
 |---|---|---|
