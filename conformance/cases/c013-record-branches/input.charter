@@ -1,0 +1,14 @@
+// A record literal's number fields start as number literals, so { n = 0 } and { n = r.n } must
+// unify field by field. The checker used to compare them exactly and report "different types",
+// printing both as { n: Int, t: Text }. Found by the H1 pilot's Charter reference for task p19.
+module recs@0.1.0
+type R = { n: Int, t: Text }
+
+fn pick(b: Bool, r: R): R = if b then { n = 0, t = "" } else { n = r.n, t = r.t }
+
+query Q(b: Bool): Int permit public = pick(b, { n = 7, t = "x" }).n
+
+test "either branch gives an R" {
+  when Q(true) expect ok
+  then result == 0
+}

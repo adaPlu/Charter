@@ -162,6 +162,17 @@ export function check(p: Program): CheckResult {
       return u ? { k: "Optional", inner: u } : null;
     }
     if (a.k === "List" && b.k === "List") { const u = unify(a.elem, b.elem); return u ? { k: "List", elem: u } : null; }
+    // Records unify field by field, so { n = 0 } and { n = x.n } agree (a literal field has type NumLit).
+    if (a.k === "Record" && b.k === "Record" && a.fields.length === b.fields.length) {
+      const fields: [string, Ty][] = [];
+      for (const [n, t] of a.fields) {
+        const f = b.fields.find(([m]) => m === n);
+        const u = f ? unify(t, f[1]) : null;
+        if (!u) return null;
+        fields.push([n, u]);
+      }
+      return { k: "Record", fields };
+    }
     return same(a, b) ? a : null;
   };
 

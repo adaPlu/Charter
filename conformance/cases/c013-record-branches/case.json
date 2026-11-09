@@ -1,0 +1,9 @@
+{
+  "title": "if branches that build records unify field by field",
+  "source": "Checker bug found by the H1 pilot's Charter reference for task p19",
+  "covers": [],
+  "expect": {
+    "parse": "ok",
+    "check": { "errors": [], "warnings": [], "tests": { "pass": 1, "fail": 0, "skip": 0 } }
+  }
+}
