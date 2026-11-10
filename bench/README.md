@@ -35,6 +35,8 @@ The free-decoding comparison still answers the question that matters most first:
 
 Two more things the report must say. The exported grammar forces whitespace after word-like tokens, which matters only for arm A. Charter reserves common words such as `to`, `by`, `set`, `order` and `result`. The wallet task's contract names a parameter `to`, and Charter programs must rename it. That is a real cost of the language, and the pilot should measure it rather than hide it.
 
+**The tasks are public, and the report must say that too.** The repository was made public on November 9, 2026, with every task, every hidden test and both sets of reference answers in it. The tasks carry no canary strings, and there is no private held-out set, although Phase 7 asks for both. A pilot result is therefore valid only for models trained before that date and run without web access. The full evaluation needs new tasks with a private held-out set.
+
 ## Running it
 
 A no-model check of the **two validation-only tasks**, which have references in both languages:

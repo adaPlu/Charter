@@ -1,6 +1,6 @@
-# Charter
+# The Charter Experiment
 
-Charter is a programming language for software that an AI writes and a machine checks.
+Charter is a programming language for software that an AI writes and a machine checks. This repository is the experiment that tests whether that idea works. It holds the language's design, a working toolchain, and the benchmark that will measure Charter against TypeScript.
 
 A person describes what the software should do in plain words. An AI turns that into a small, typed, formal program. Deterministic tools then check that program, prove what they can about it, and run it. No AI model is involved at runtime.
 
@@ -220,6 +220,14 @@ The full plan is in the design document, section 8.5.
 You need **Node 22.18 or later**. The `charter` command runs TypeScript directly, so there is no build step. Run every command from the repository root.
 
 ```bash
+git clone https://github.com/adaPlu/Charter.git
+```
+
+```bash
+cd Charter
+```
+
+```bash
 npx pnpm@9.15.4 install
 ```
 
@@ -425,6 +433,8 @@ The pilot is a small first test of H1, and it is allowed to stop the project. A 
 | Reference answers | TypeScript passes all 22 tasks. Charter passes 19 of 22; the three gaps (p10, p19, p20) are limits of the language, recorded in [bench/README.md](bench/README.md) and the errata. |
 | Still needed | Access to the models (for example an Anthropic API key) and a budget, estimated at $15 to $40 for two models. A calibration run on one task, for about $1, would give real numbers first. An independent review of the tasks is still worth adding. |
 
+**The tasks are public.** This repository was made public on November 9, 2026, and it contains every task, every hidden test and both sets of reference answers. "Hidden" means hidden from the model's prompt, not secret. The tasks carry no canary strings and there is no private held-out set, both of which the design (Phase 7) asks for. A model whose training data or tools could reach this repository may have seen the answers, so a pilot result is only valid for models trained before that date and run without web access, and the report must name the models and say so. The full evaluation (milestone 8) needs new tasks with a private held-out set.
+
 The pilot can only compare free decoding for now. Holding a model's output to the grammar needs a llama.cpp server, and no TypeScript grammar exists for the other side. [bench/README.md](bench/README.md) lists every deviation from the design, the commands, and the cost estimate.
 
 Check the harness and the reference answers with no model and no cost:
@@ -551,4 +561,4 @@ These are deliberate trade-offs, plus limits that writing the reference answers 
 
 ## License
 
-No license has been chosen. The repository is private and has no license file.
+No license has been chosen yet, and the repository has no license file. Until one is added, the code and documents are published for reading and evaluation, and all rights are reserved by the author.
