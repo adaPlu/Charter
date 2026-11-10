@@ -2,7 +2,7 @@
   "id": "p09-support-tickets",
   "family": "F3",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers clients and agents. A client opens a ticket with a nonblank subject of up to 100 characters. Only the operator can assign a registered agent. Only its assigned agent may close a ticket; closing twice rejects AlreadyClosed. Tickets start open. Only the creator or assigned agent can read a ticket, even after it closes.",
   "contract": {
     "rules": [

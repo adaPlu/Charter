@@ -2,7 +2,7 @@
   "id": "p06-room-booking",
   "family": "F2",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "A venue operator creates rooms with a nonblank name and capacity 1–100. Registered guests may book a room on a YYYY-MM-DD date in either the morning or afternoon slot. A room/date/slot can be booked only once. A guest may cancel only their own booking, which frees the slot. Guests see only their bookings, sorted by date, then morning before afternoon, then id. Dates need only have the stated character shape, not calendar validity.",
   "contract": {
     "rules": [

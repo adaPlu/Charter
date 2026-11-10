@@ -2,7 +2,7 @@
   "id": "p08-team-pages",
   "family": "F3",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers people. A person creates a team with a nonblank name and becomes its owner and member. Only the owner can add registered people as members; adding an existing member is harmless. Members can create pages with titles of 1–80 nonblank characters and read pages in their team. Only the page author or team owner can rename a page. Outsiders cannot see pages.",
   "contract": {
     "rules": [

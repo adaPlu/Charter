@@ -2,7 +2,7 @@
   "id": "p11-collaborative-lists",
   "family": "F3",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers people. A person creates and owns a private shopping list. Only the owner may invite other registered people. The owner is a member of their own list. Members can add items named with 1–60 nonblank characters. Only the item author or list owner may remove an item. Only members can see that list's items sorted by name then id.",
   "contract": {
     "rules": [

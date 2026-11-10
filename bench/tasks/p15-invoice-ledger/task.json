@@ -2,7 +2,7 @@
   "id": "p15-invoice-ledger",
   "family": "F4",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers customers and creates invoices of 1–1000000 cents for one customer. That customer may pay a positive whole-cent amount no greater than the remaining balance. Only the operator may refund a positive amount no greater than what has already been paid; a refund increases the outstanding balance. Failed calls do not change amounts. Only the invoice customer can see its remaining balance.",
   "contract": {
     "rules": [

@@ -39,3 +39,7 @@ Your name goes into each approved task's `authoredBy` field, and the pilot repor
 Before this packet was frozen, AI models checked it and the tasks were edited (`docs/pilot/ai-prereview-2026-11-09.md`). That was not a review by you and does not count as one. Please **do not read it until your verdicts are written**, so it cannot steer you. Afterwards, compare: anything it missed or decided badly is worth saying.
 
 The packet you received is frozen (`freeze.json`). If anything in the tasks changes after you start, you will be told exactly what.
+
+## Status
+
+On November 9, 2026 the project owner reviewed the frozen packet and approved all 22 tasks. Those verdicts are in [verdicts.md](verdicts.md), and the record is `docs/pilot/owner-review-2026-11-09.md`. The owner worked on Charter's design and has seen solutions, so that was not the independent review this page asks for. If you are an independent reviewer, everything above still applies: do not read the owner's verdicts first, and record yours in a new file, `verdicts-<your name>.md`, with the same columns.

@@ -2,7 +2,7 @@
   "id": "p18-review-moderation",
   "family": "F5",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers reviewers. A registered reviewer posts 1–5 stars and a nonblank message up to 200 characters. Reviews begin pending. Only the operator may approve or reject a pending review; no second decision is allowed. Only approved reviews appear publicly, sorted by stars descending and message ascending. An author can delete any of their reviews, removing them from public view.",
   "contract": {
     "rules": [

@@ -2,7 +2,7 @@
   "id": "p04-private-bookmarks",
   "family": "F2",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers readers. A reader may save private bookmarks with nonblank titles of up to 80 characters and nonblank URLs of up to 200 characters. Each reader can rename or delete only their own bookmarks. Their bookmarks are sorted by title ascending then id. No one can see anyone else's bookmarks.",
   "contract": {
     "rules": [

@@ -2,7 +2,7 @@
   "id": "p05-pantry-stock",
   "family": "F2",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers households. A household creates pantry items with a nonblank name up to 50 characters and 1–100 units. Names must be unique within each household, not across households. The owner may restock by 1–100 units, or consume 1 or more up to the available quantity. Zero-stock items remain listed. Rejected operations never change stock. Each household sees its own items sorted by name then id.",
   "contract": {
     "rules": [

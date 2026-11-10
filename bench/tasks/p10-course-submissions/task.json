@@ -2,7 +2,7 @@
   "id": "p10-course-submissions",
   "family": "F3",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers students and creates classes with nonblank codes. Students can enroll in any existing class once. An enrolled student may submit exactly one nonblank answer, up to 200 characters, per class. Students can read only their own submitted answer; an enrolled student with no answer gets NotFound. Only the operator can see the total number of submissions.",
   "contract": {
     "rules": [

@@ -2,7 +2,7 @@
   "id": "p17-shipment-workflow",
   "family": "F5",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers customers and creates shipments for them. Each shipment starts created. Only the operator advances one step at a time: created to packed, packed to shipped, shipped to delivered. Skips, repeats or transitions after cancellation are WrongState. A target that is not packed, shipped or delivered is a ValidationError, whatever the current state. The customer may cancel only in created or packed state. Only the owner can track their shipment.",
   "contract": {
     "rules": [

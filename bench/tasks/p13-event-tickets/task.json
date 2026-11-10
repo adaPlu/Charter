@@ -2,7 +2,7 @@
   "id": "p13-event-tickets",
   "family": "F4",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers buyers and creates events with a nonblank title, ticket price 1–100000 cents, and remaining stock 0–1000. Buyers may buy 1–10 tickets at a time, if enough tickets remain. Buying creates a purchase id and reduces stock atomically. Its total price is quantity times ticket price. A buyer may cancel only their own purchase, once, restoring stock. Anyone can see remaining stock; only the buyer sees a purchase total.",
   "contract": {
     "rules": [

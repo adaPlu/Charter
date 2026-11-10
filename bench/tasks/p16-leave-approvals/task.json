@@ -2,7 +2,7 @@
   "id": "p16-leave-approvals",
   "family": "F5",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers workers. A worker requests 1–14 days of leave with a nonblank reason of at most 200 characters. Requests start pending. Only the operator may approve or reject a pending request. The worker may withdraw a pending request. After approval, rejection or withdrawal no more changes are allowed. Workers see only their own status.",
   "contract": {
     "rules": [

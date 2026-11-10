@@ -2,7 +2,7 @@
   "id": "p03-final-grades",
   "family": "F1",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "A grade calculator accepts 1–5 integer scores from 0 to 100. When there are three or more scores, exactly one lowest score is discarded. The remaining scores are averaged, rounded down to a whole number, then an integer bonus of 0–10 is added. The final grade cannot exceed 100. A grade of at least 70 is passing.",
   "contract": {
     "rules": [],

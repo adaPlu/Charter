@@ -2,7 +2,7 @@
   "id": "p02-shipping-quotes",
   "family": "F1",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "A shipping calculator charges 400 cents for local parcels, 800 for regional, or 1600 for remote, plus 100 cents per kilogram. Parcels must weigh 1–30 whole kilograms. Express adds 600 cents. Standard (non-express) local delivery is completely free when the basket subtotal reaches 5000 cents; express local delivery is always charged in full. Basket amounts must be nonnegative integers.",
   "contract": {
     "rules": [],

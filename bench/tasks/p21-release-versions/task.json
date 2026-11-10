@@ -2,7 +2,7 @@
   "id": "p21-release-versions",
   "family": "F6",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-09), written without reading the new language's design; not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-09), written without reading the new language's design. Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "A public release tool compares two software version numbers and says whether the first is older than, the same as, or newer than the second. A version is 1 to 4 parts separated by single dots, and each part is 1 to 5 ASCII digits 0–9; nothing else is allowed, not even spaces or signs. Parts are compared as whole numbers from the left, so 1.10 is newer than 1.9, and leading zeros do not matter (007 equals 7). A version with fewer parts counts as if extra 0 parts were added at its end, so 1.2 and 1.2.0 are the same. If either version is not valid, the comparison is a ValidationError.",
   "contract": {
     "rules": [],

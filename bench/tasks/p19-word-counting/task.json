@@ -2,7 +2,7 @@
   "id": "p19-word-counting",
   "family": "F6",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "A public tool counts occurrences of a word in a passage. Case does not matter. A word is a maximal run of ASCII letters A through Z; digits, punctuation, spaces and non-ASCII characters separate words. The search term must consist of 1–20 ASCII letters; passage length cannot exceed 1000 characters. Partial words do not count.",
   "contract": {
     "rules": [],

@@ -2,7 +2,7 @@
   "id": "p14-loyalty-points",
   "family": "F4",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-06), not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-06). Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "An operator registers customers with zero reward points. A customer may earn 1–1000 integer points at a time, transfer 1 or more to another registered customer, and redeem 1 or more. Transfers to oneself are SelfTransfer. Transfers and redemptions cannot overdraw a balance; failure changes neither balance. A customer sees only their own points.",
   "contract": {
     "rules": [

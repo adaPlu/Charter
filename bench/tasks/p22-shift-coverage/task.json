@@ -2,7 +2,7 @@
   "id": "p22-shift-coverage",
   "family": "F6",
   "validationOnly": false,
-  "authoredBy": "AI-assisted pilot draft (2026-11-09), written without reading the new language's design; not independently written or reviewed; independent task-author/reviewer approval required before scientific use",
+  "authoredBy": "AI-assisted pilot draft (2026-11-09), written without reading the new language's design. Reviewed and approved by the project owner (adaPlu) on 2026-11-09. Not independent: the reviewer worked on Charter's design and has seen solutions, so Phase 7's independence requirement is not met and the pilot report must say so.",
   "request": "A café manager checks a day's staff rota with a public tool. Each shift has a start and an end in whole minutes after midnight, with 0 ≤ start < end ≤ 1440. A shift covers every minute from its start up to but not including its end, so a shift ending at 600 and another starting at 600 do not overlap. Given a list of 0–20 shifts, in any order, the tool reports covered, the number of minutes of the day covered by at least one shift, and peak, the largest number of shifts covering any single minute. Identical shifts may appear and each one counts. With no shifts, both numbers are 0. More than 20 shifts, or any shift breaking the limits above, is a ValidationError.",
   "contract": {
     "rules": [],

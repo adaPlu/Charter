@@ -11,7 +11,7 @@ The full design, all nine phases, is in [docs/charter-design.md](docs/charter-de
 | 0. Foundations | Done. Repository, layer rule, frozen grammar, conformance corpus, CI. |
 | 1. Calculator end to end | Done. Parser, printer, hashes, name resolution, type checker, Z3 proofs, interpreter, tests. |
 | **2. State, and readiness for the H1 pilot** | **Done, except the pilot run.** Rules as transactions on SQLite, invariants at every commit, step log and replay, `charter serve`, the grammar frozen and exported for constrained decoding. |
-| Gate: H1 pilot | **Harness built and tested; pilot not run.** Waiting on task authors, model access and a budget. See [bench/README.md](bench/README.md). |
+| Gate: H1 pilot | **Harness built and tested; pilot not run.** The project owner has reviewed the 22 tasks; that review is not independent. Waiting on model access and a budget. See [bench/README.md](bench/README.md). |
 | 3 to 9 | Planned. See the design doc, section 8.5. |
 
 What runs now: types, functions, queries, entities, rules, permissions, invariants, events and triggers, and tests and properties with setups and callers. Effects are queued in the outbox but not yet dispatched (milestone 4). Invariants are checked at every commit; proving them arrives in milestone 3.
@@ -20,7 +20,7 @@ What runs now: types, functions, queries, entities, rules, permissions, invarian
 
 The pilot (design doc, 7.3) compares how often models write valid Charter against valid TypeScript for the same task. The harness in [bench/](bench/README.md) is built and tested: it prompts a model, checks the program with the language's real tool, repairs from diagnostics, and runs hidden black-box tests over HTTP against both languages. It can only compare free decoding for now: constrained decoding needs a llama.cpp server, and no TypeScript grammar exists. Running the pilot needs three decisions:
 
-1. **Task authors.** Phase 7 requires tasks and hidden tests written independently of the design. The two tasks in `bench/tasks` test the harness and are excluded from results.
+1. **Task authors.** Phase 7 requires tasks and hidden tests written independently of the design. The 22 pilot tasks were drafted with AI help and approved by the project owner on November 9, 2026, which does not meet that requirement, so a pilot run on them must report it. The two validation-only tasks test the harness and are excluded from results.
 2. **Model access.** For example, an Anthropic API key for Claude Opus 5.5 and Claude Sonnet 5.5.
 3. **A budget.** Estimated at $15 to $40 for both models; [bench/README.md](bench/README.md) has the details.
 
@@ -116,7 +116,7 @@ That runs the layer rule, the grammar freeze, the conformance corpus, the GBNF e
 | Item | Value |
 |---|---|
 | Grammar productions | 83, of which 74 are syntactic, all exercised by the corpus. Frozen for the pilot; reopened once, for A26, before any model run. |
-| Conformance cases | 18 |
+| Conformance cases | 21 |
 | Tests | 102, including about 1,900 fuzzed programs and expressions per run, and the to-do app tested over HTTP |
 | Amendments | A1 to A27. The 23 due by milestone 2 are covered by conformance cases. |
 

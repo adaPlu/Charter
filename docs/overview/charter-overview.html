@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Charter: an overview</title>
+<style>
+  @page {
+    size: Letter;
+    margin: 0.85in 0.9in 0.9in 0.9in;
+    @bottom-left  { content: "Charter: an overview"; font: 8pt "Segoe UI", sans-serif; color: #6b7280; }
+    @bottom-right { content: counter(page) " / " counter(pages); font: 8pt "Segoe UI", sans-serif; color: #6b7280; }
+  }
+  :root { --ink: #1c2330; --muted: #5b6474; --line: #d9dee7; --accent: #1f5f8b; --accent-soft: #eaf2f8; --code-bg: #f5f7fa; --ok: #1d6b45; --warn: #96600a; --bad: #a02c2c; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html { font-size: 10.4pt; }
+  body { margin: 0; color: var(--ink); font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height: 1.5; }
+  p { margin: 0 0 0.7em; orphans: 3; widows: 3; }
+  h1 { font-size: 30pt; line-height: 1.1; margin: 0 0 0.15em; letter-spacing: -0.01em; font-weight: 700; }
+  h2 { font-size: 15.5pt; line-height: 1.25; margin: 1.5em 0 0.5em; padding-top: 0.5em; border-top: 2px solid var(--accent); color: var(--accent); font-weight: 600; break-after: avoid; }
+  h3 { font-size: 11.4pt; margin: 1.25em 0 0.35em; font-weight: 600; break-after: avoid; }
+  .subtitle { font-size: 13.5pt; color: var(--muted); margin: 0 0 0.5em; }
+  .meta { font-size: 8.8pt; color: var(--muted); margin: 0 0 1.4em; }
+  .summary { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 0.85em 1.05em; margin: 0 0 0.6em; break-inside: avoid; }
+  .summary p:last-child { margin-bottom: 0; }
+  ul, ol { margin: 0 0 0.75em; padding-left: 1.35em; }
+  li { margin-bottom: 0.25em; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 0.92em; background: var(--code-bg); padding: 0.05em 0.3em; border-radius: 3px; }
+  pre { font-family: Consolas, "Cascadia Mono", monospace; font-size: 8.4pt; line-height: 1.42; background: var(--code-bg); border: 1px solid var(--line); border-radius: 5px; padding: 0.75em 0.95em; margin: 0.5em 0 0.9em; white-space: pre; overflow: hidden; break-inside: avoid; }
+  pre .c { color: #6b7280; }
+  pre .k { color: var(--accent); font-weight: 600; }
+  pre .ok { color: var(--ok); } pre .warn { color: var(--warn); } pre .bad { color: var(--bad); font-weight: 600; }
+  .label { font-size: 8.4pt; color: var(--muted); margin: 0.9em 0 -0.15em; }
+  table { width: 100%; border-collapse: collapse; margin: 0.5em 0 1em; font-size: 9.4pt; line-height: 1.4; }
+  th { text-align: left; font-weight: 600; font-size: 8.6pt; color: var(--muted); border-bottom: 1.5px solid var(--ink); padding: 0.35em 0.6em 0.35em 0; vertical-align: bottom; }
+  td { border-bottom: 1px solid var(--line); padding: 0.45em 0.6em 0.45em 0; vertical-align: top; }
+  tr { break-inside: avoid; }
+  td:last-child, th:last-child { padding-right: 0; }
+  .tag { display: inline-block; font-size: 8pt; font-weight: 600; padding: 0.05em 0.5em; border-radius: 9px; white-space: nowrap; }
+  .tag.built { background: #e3f1e9; color: var(--ok); }
+  .tag.part  { background: #fbf0d9; color: var(--warn); }
+  .tag.plan  { background: #eceff3; color: var(--muted); }
+  figure { margin: 0.8em 0 1em; break-inside: avoid; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 8.6pt; color: var(--muted); margin-top: 0.4em; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.6em; }
+  .note { font-size: 9.2pt; color: var(--muted); }
+  .keep { break-inside: avoid; }
+  .newpage { break-before: page; border-top: 2px solid var(--accent); margin-top: 0; }
+</style>
+</head>
+<body>
+
+<h1>Charter</h1>
+<p class="subtitle">A programming language for software that an AI writes and a machine checks</p>
+<p class="meta">Overview of what it is, how it works and why we would use it. State of the project on November 9, 2026 (commit 65d0816).</p>
+
+<div class="summary">
+  <p><strong>In short.</strong> A person says in plain words what the software should do. An AI writes that down as a small, strict program in the Charter language. Ordinary, predictable tools then check the program, prove what they can about it, and run it. No AI is involved once the software is running.</p>
+  <p>The bet is that an AI makes fewer mistakes in a language built this way, and that the mistakes it does make are caught before the software runs. The tools to check and run Charter programs are built and working. The experiment that tests the bet is ready but has not been run.</p>
+</div>
+
+<h2>1. What Charter is</h2>
+
+<p>A Charter program is a charter in the ordinary sense of the word: a written statement of the rules. It says five things about a piece of software.</p>
+
+<table>
+  <tr><th style="width:24%">The program states</th><th style="width:16%">Charter word</th><th>Example from a to-do app</th></tr>
+  <tr><td>What data is stored</td><td><code>entity</code></td><td>A task has an owner, a title, an optional due date and a done flag.</td></tr>
+  <tr><td>Who may do what</td><td><code>permission</code></td><td>A person owns a task if they are its owner.</td></tr>
+  <tr><td>Which actions exist, and what each one changes</td><td><code>rule</code></td><td>Completing a task is allowed only for its owner, only if it is not already done, and sets the done flag.</td></tr>
+  <tr><td>What must always be true</td><td><code>invariant</code></td><td>A store-credit balance is never negative.</td></tr>
+  <tr><td>What the software is for, in plain words, and whether a person agreed to it</td><td><code>requirement</code></td><td>"Each person sees and changes only their own tasks." Confirmed.</td></tr>
+</table>
+
+<p>Charter is aimed at software that is mostly data, rules and permissions: business applications, web services, workflows and game servers. In that kind of software, most bugs are broken rules, not broken algorithms. It is the wrong tool for heavy computation, device drivers or game engines.</p>
+
+<p>Very little of Charter is invented. Its ideas come from existing, well-studied systems: transactions from databases, guarded rules from formal modelling languages, automatic proofs from verification tools, and deny-by-default permissions from policy languages. What is new is the combination, and three additions: requirements live inside the program, the grammar is small enough that an AI's output can be held to it, and AI edits are meant to be small, typed changes instead of free rewrites of text.</p>
+
+<h2>2. How it works</h2>
+
+<figure>
+<svg viewBox="0 0 700 172" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6474"/></marker>
+  </defs>
+  <!-- boxes -->
+  <g font-size="11.5">
+    <rect x="1" y="24" width="140" height="74" rx="6" fill="#ffffff" stroke="#9aa3b2"/>
+    <text x="71" y="48" text-anchor="middle" font-weight="600" fill="#1c2330">Person</text>
+    <text x="71" y="66" text-anchor="middle" fill="#5b6474" font-size="10">says what the software</text>
+    <text x="71" y="80" text-anchor="middle" fill="#5b6474" font-size="10">should do, in plain words</text>
+
+    <rect x="187" y="24" width="140" height="74" rx="6" fill="#ffffff" stroke="#9aa3b2"/>
+    <text x="257" y="48" text-anchor="middle" font-weight="600" fill="#1c2330">AI model</text>
+    <text x="257" y="66" text-anchor="middle" fill="#5b6474" font-size="10">writes a Charter program</text>
+    <text x="257" y="80" text-anchor="middle" fill="#5b6474" font-size="10">and marks its guesses</text>
+
+    <rect x="373" y="24" width="140" height="74" rx="6" fill="#eaf2f8" stroke="#1f5f8b" stroke-width="1.4"/>
+    <text x="443" y="48" text-anchor="middle" font-weight="600" fill="#1f5f8b">Checker</text>
+    <text x="443" y="66" text-anchor="middle" fill="#3d4a5c" font-size="10">reads, type-checks and</text>
+    <text x="443" y="80" text-anchor="middle" fill="#3d4a5c" font-size="10">proves; refuses bad programs</text>
+
+    <rect x="559" y="24" width="140" height="74" rx="6" fill="#eaf2f8" stroke="#1f5f8b" stroke-width="1.4"/>
+    <text x="629" y="48" text-anchor="middle" font-weight="600" fill="#1f5f8b">Runtime</text>
+    <text x="629" y="66" text-anchor="middle" fill="#3d4a5c" font-size="10">runs the program and</text>
+    <text x="629" y="80" text-anchor="middle" fill="#3d4a5c" font-size="10">logs every step</text>
+  </g>
+  <!-- arrows -->
+  <g stroke="#5b6474" stroke-width="1.3" fill="none">
+    <line x1="143" y1="61" x2="184" y2="61" marker-end="url(#a)"/>
+    <line x1="329" y1="61" x2="370" y2="61" marker-end="url(#a)"/>
+    <line x1="515" y1="61" x2="556" y2="61" marker-end="url(#a)"/>
+    <path d="M443 100 V128 H257 V101" marker-end="url(#a)" stroke-dasharray="4 3"/>
+  </g>
+  <text x="350" y="143" text-anchor="middle" font-size="10" fill="#5b6474">errors come back with a counterexample and a suggested fix</text>
+  <!-- bracket -->
+  <g font-size="9.5" fill="#5b6474">
+    <line x1="373" y1="12" x2="699" y2="12" stroke="#1f5f8b" stroke-width="1.2"/>
+    <text x="536" y="8" text-anchor="middle" fill="#1f5f8b" font-weight="600">no AI involved: same input, same result, every time</text>
+    <line x1="187" y1="160" x2="327" y2="160" stroke="#9aa3b2" stroke-width="1.2"/>
+    <text x="257" y="171" text-anchor="middle">the only part that uses an AI model</text>
+  </g>
+</svg>
+<figcaption>Figure 1. The path from a request to running software. The checker and runtime are built. The command that connects a person's words to the AI (<code>charter ask</code>) is planned; today the AI step is driven by the test harness.</figcaption>
+</figure>
+
+<h3>2.1 A complete program</h3>
+
+<p>This is a whole Charter program, taken unchanged from the project (<code>bench/tasks/p12-store-credit/reference.charter</code>). It keeps a store-credit balance for each person.</p>
+
+<pre><span class="k">module</span> credit@0.1.0
+<span class="k">principal</span> Person
+
+<span class="k">entity</span> Person { name: Text, balance: Int where &gt;= 0 = 0 }
+<span class="k">enum</span> CreditError { InsufficientCredit }
+
+<span class="k">rule</span> Register(name: Text where len(trim(it)) &gt;= 1): Id&lt;Person&gt;
+  permit system
+  create Person { name = name } as p
+  return p.id
+
+<span class="k">rule</span> Grant(customer: Person, cents: Int where it &gt;= 1 and it &lt;= 100000): Int
+  permit system
+  set customer.balance = customer.balance + cents
+  return customer.balance
+
+<span class="k">rule</span> Spend(cents: Int where &gt;= 1): Int rejects CreditError
+  permit anyone
+  let me = caller
+  guard me.balance &gt;= cents else reject InsufficientCredit
+  set me.balance = me.balance - cents
+  return me.balance
+
+<span class="k">query</span> Balance(): Int permit anyone = caller.balance
+
+<span class="k">invariant</span> NeverNegative: Person.balance &gt;= 0</pre>
+
+<table class="keep">
+  <tr><th style="width:36%">Line</th><th>What it means</th></tr>
+  <tr><td><code>principal Person</code></td><td>The people who sign in are <code>Person</code> records. Inside a rule, <code>caller</code> is the person making the request.</td></tr>
+  <tr><td><code>balance: Int where &gt;= 0 = 0</code></td><td>A balance is a whole number that is never below zero, and starts at zero. The limit is part of the type, so it applies everywhere.</td></tr>
+  <tr><td><code>permit system</code></td><td>Only the operator may register people or grant credit. Anything not permitted is denied.</td></tr>
+  <tr><td><code>cents: Int where it &gt;= 1 and it &lt;= 100000</code></td><td>A grant must be between 1 and 100,000 cents. A request outside that range is rejected before the rule runs.</td></tr>
+  <tr><td><code>guard … else reject InsufficientCredit</code></td><td>Spending more than the balance is refused with a named reason, and nothing changes.</td></tr>
+  <tr><td><code>query Balance()</code></td><td>A query reads data and can never change it.</td></tr>
+  <tr><td><code>invariant NeverNegative</code></td><td>No action, present or future, may leave any balance below zero. This is checked after every change.</td></tr>
+</table>
+
+<h3>2.2 What happens when a rule is called</h3>
+
+<p>Rules are the only way to change stored data. Every call to a rule is one <em>step</em>, and every step goes through the same sequence. If any check fails, the step is rejected with a named reason and the data is left exactly as it was.</p>
+
+<figure>
+<svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#5b6474"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#a02c2c"/></marker>
+  </defs>
+  <g font-size="11">
+    <g>
+      <rect x="1" y="6" width="118" height="58" rx="6" fill="#fff" stroke="#9aa3b2"/>
+      <text x="60" y="29" text-anchor="middle" font-weight="600" fill="#1c2330">1. Inputs</text>
+      <text x="60" y="46" text-anchor="middle" font-size="9.6" fill="#5b6474">within their limits?</text>
+    </g>
+    <g>
+      <rect x="146" y="6" width="118" height="58" rx="6" fill="#fff" stroke="#9aa3b2"/>
+      <text x="205" y="29" text-anchor="middle" font-weight="600" fill="#1c2330">2. Permission</text>
+      <text x="205" y="46" text-anchor="middle" font-size="9.6" fill="#5b6474">is the caller allowed?</text>
+    </g>
+    <g>
+      <rect x="291" y="6" width="118" height="58" rx="6" fill="#fff" stroke="#9aa3b2"/>
+      <text x="350" y="29" text-anchor="middle" font-weight="600" fill="#1c2330">3. Guards</text>
+      <text x="350" y="46" text-anchor="middle" font-size="9.6" fill="#5b6474">do the conditions hold?</text>
+    </g>
+    <g>
+      <rect x="436" y="6" width="118" height="58" rx="6" fill="#fff" stroke="#9aa3b2"/>
+      <text x="495" y="29" text-anchor="middle" font-weight="600" fill="#1c2330">4. Invariants</text>
+      <text x="495" y="46" text-anchor="middle" font-size="9.6" fill="#5b6474">still true after the change?</text>
+    </g>
+    <g>
+      <rect x="581" y="6" width="118" height="58" rx="6" fill="#e3f1e9" stroke="#1d6b45" stroke-width="1.4"/>
+      <text x="640" y="29" text-anchor="middle" font-weight="600" fill="#1d6b45">5. Commit</text>
+      <text x="640" y="46" text-anchor="middle" font-size="9.6" fill="#2f5c45">save all changes at once</text>
+    </g>
+  </g>
+  <g stroke="#5b6474" stroke-width="1.3">
+    <line x1="121" y1="35" x2="143" y2="35" marker-end="url(#b)"/>
+    <line x1="266" y1="35" x2="288" y2="35" marker-end="url(#b)"/>
+    <line x1="411" y1="35" x2="433" y2="35" marker-end="url(#b)"/>
+    <line x1="556" y1="35" x2="578" y2="35" marker-end="url(#b)"/>
+  </g>
+  <g stroke="#a02c2c" stroke-width="1.2" stroke-dasharray="4 3" fill="none">
+    <line x1="60" y1="66" x2="60" y2="100" marker-end="url(#r)"/>
+    <line x1="205" y1="66" x2="205" y2="100" marker-end="url(#r)"/>
+    <line x1="350" y1="66" x2="350" y2="100" marker-end="url(#r)"/>
+    <line x1="495" y1="66" x2="495" y2="100" marker-end="url(#r)"/>
+  </g>
+  <rect x="1" y="103" width="553" height="40" rx="6" fill="#fbeeee" stroke="#a02c2c"/>
+  <text x="277" y="121" text-anchor="middle" font-size="11" font-weight="600" fill="#a02c2c">Rejected with a named reason</text>
+  <text x="277" y="135" text-anchor="middle" font-size="9.6" fill="#7a3030">nothing is changed</text>
+  <text x="640" y="121" text-anchor="middle" font-size="9.6" fill="#5b6474">the step, accepted or</text>
+  <text x="640" y="134" text-anchor="middle" font-size="9.6" fill="#5b6474">rejected, goes in the log</text>
+  <line x1="640" y1="66" x2="640" y2="106" stroke="#5b6474" stroke-width="1.2" marker-end="url(#b)"/>
+</svg>
+<figcaption>Figure 2. One step. A change is saved completely or not at all.</figcaption>
+</figure>
+
+<p>Because every step is recorded, the whole history can be replayed on an empty database, and it must reproduce every outcome and the exact final data. That is how the project checks that running a Charter program is fully predictable.</p>
+
+<h3>2.3 The checker refuses programs it cannot trust</h3>
+
+<div class="keep">
+<p>Before a program runs, <code>charter check</code> does three things: it reads the program against the grammar, checks every name and type, and then tries to <em>prove</em> that certain errors cannot happen. For the store-credit program above it reports:</p>
+
+<pre><span class="ok">✓</span> parsed (1 module, 8 declarations)
+<span class="ok">✓</span> names and types
+<span class="ok">✓</span> proof obligations: 1 proven, 1 kept as runtime checks
+    proven         me.balance - cents stays within the Int range  (line 21)
+    runtime check  customer.balance + cents stays within the Int range  (line 14)</pre>
+</div>
+
+<p>When it cannot prove something that matters, it refuses the program and shows an input that would break it. Here a calculator divides without first checking the divisor:</p>
+
+<pre><span class="bad">error CH0401</span>  cannot prove that b is not zero
+    known: nothing
+    counterexample: b = 0
+    fix (add_guard): check the divisor first, for example: if b == 0 then … else …</pre>
+
+<p>The message is written for an AI as much as for a person. It names the problem, gives a concrete failing case and suggests the kind of fix, so a model can repair its own program without guessing.</p>
+
+<h3>2.4 Requirements are part of the program</h3>
+
+<p>Each requirement is a line in the program with a status. <code>confirmed</code> means a person asked for it. <code>inferred</code> means the AI filled a gap with a guess. Code points back to the requirement it serves with <code>req R-5</code>, and the checker reports every guess that nobody has approved:</p>
+
+<pre><span class="k">requirement</span> R-5 confirmed "Each person sees and changes only their own tasks."
+<span class="k">requirement</span> R-7 inferred  "Done tasks cannot be reopened."
+
+<span class="warn">⚠</span> 4 requirement(s) not confirmed: R-6 (inferred), R-7 (inferred), R-8 (inferred), R-10 (inferred).
+  A release build is blocked until a person confirms them.</pre>
+
+<p>This is the part of Charter aimed at the hardest problem with AI-written software: the AI quietly deciding something you never asked for.</p>
+
+<h2>3. Why we would use it</h2>
+
+<p>Each part of the design answers a specific way that AI-written software goes wrong today.</p>
+
+<table>
+  <tr><th style="width:27%">Problem today</th><th>What Charter does about it</th><th style="width:15%">State</th></tr>
+  <tr>
+    <td>The AI writes code that does not compile, or is subtly wrong.</td>
+    <td>The language is small (83 grammar rules) and regular, its words are borrowed from TypeScript and SQL, and every program has exactly one correct layout. There are fewer ways to go wrong.</td>
+    <td><span class="tag part">Built, unproven</span></td>
+  </tr>
+  <tr>
+    <td>A check is forgotten in one of the many places that change data.</td>
+    <td>Data changes only through rules. Every rule call passes permission, guards and invariants, and an invariant is written once and applies to every rule.</td>
+    <td><span class="tag built">Built</span></td>
+  </tr>
+  <tr>
+    <td>Bugs are found only when the software is running.</td>
+    <td>The checker proves that some errors cannot happen, and refuses the program with a counterexample when it cannot.</td>
+    <td><span class="tag part">Partly built</span></td>
+  </tr>
+  <tr>
+    <td>The AI guesses what you meant and you never find out.</td>
+    <td>Guesses are marked <code>inferred</code>, listed by the checker, and are meant to block a release until a person confirms them.</td>
+    <td><span class="tag part">Partly built</span></td>
+  </tr>
+  <tr>
+    <td>An AI in a running system is unpredictable and hard to audit.</td>
+    <td>No AI runs in production. The same request on the same data always gives the same result, and every step is logged and can be replayed.</td>
+    <td><span class="tag built">Built</span></td>
+  </tr>
+  <tr>
+    <td>A small change request breaks something unrelated.</td>
+    <td>AI edits are meant to be small, typed changes to one part of the program, each with a report of what else is affected.</td>
+    <td><span class="tag plan">Planned</span></td>
+  </tr>
+</table>
+
+<p class="note">"Partly built" in detail: division by zero and type limits are proven now, while invariants are checked after every change and will be proven ahead of time in milestone 3. Guesses are marked and reported now, but the release block is only a warning, and nothing yet stops an AI from marking its own guess as confirmed.</p>
+
+<h3>Why it should work, and how we will know</h3>
+
+<p>The design rests on four claims. Each has a measurement and a bar it must clear against TypeScript, with the same AI models, the same tasks and the same budget.</p>
+
+<table>
+  <tr><th style="width:5%"></th><th style="width:40%">Claim</th><th>Bar to clear</th></tr>
+  <tr><td>H1</td><td>AI models write valid programs more often in a small, strict language.</td><td>Valid on the first try at least 15 points more often than TypeScript, and passing hidden tests at least as often.</td></tr>
+  <tr><td>H2</td><td>Structured edits cause fewer accidental changes than editing text.</td><td>At least 50% fewer unrelated behaviours changed per request.</td></tr>
+  <tr><td>H3</td><td>Writing rules, permissions and invariants directly catches more mistakes before running.</td><td>At least twice as many seeded mistakes caught as strict TypeScript with a linter.</td></tr>
+  <tr><td>H4</td><td>Reading the program back in plain words lets people spot a misunderstanding faster.</td><td>More misreadings spotted, in less time, than by reading generated TypeScript.</td></tr>
+</table>
+
+<p class="keep"><strong>None of these has been measured yet.</strong> The honest position is that Charter is a well-specified bet with working tools, not a proven result. The design says plainly that Charter fails as an AI-native language if H1 and H2 both fail, even if H3 passes.</p>
+
+<h2>4. Where the project stands</h2>
+
+<div class="two">
+<div>
+<h3 style="margin-top:0.4em">Working now</h3>
+<ul>
+  <li>The grammar, frozen, with 27 recorded amendments</li>
+  <li>Parser and formatter</li>
+  <li>Name and type checker</li>
+  <li>Automatic proofs for division by zero and type limits</li>
+  <li>Stored data, with each rule call saved completely or not at all</li>
+  <li>Permissions, guards and invariants checked on every step</li>
+  <li>Tests and randomised property tests inside the program</li>
+  <li>Any program served as a web service (<code>charter serve</code>)</li>
+  <li>Step log and replay</li>
+</ul>
+</div>
+<div>
+<h3 style="margin-top:0.4em">Not built yet</h3>
+<ul>
+  <li>Proving invariants ahead of time (milestone 3)</li>
+  <li>Outside effects such as payments and email: they are queued but not sent (milestone 4)</li>
+  <li>The plain-language interface, <code>charter ask</code> (milestone 7)</li>
+  <li>A release build that refuses unconfirmed requirements</li>
+  <li>Structured AI edits with impact reports</li>
+  <li>Sign-in: the web service trusts a development-only header</li>
+</ul>
+</div>
+</div>
+
+<p>The project checks itself on every change, on Linux and Windows: 21 reference programs with their expected results, and 102 tests that include about 1,900 randomly generated programs per run.</p>
+
+<h3>The first experiment (the H1 pilot)</h3>
+
+<p>The pilot is a small first test of claim H1, and it is allowed to stop the project. A model is given the same task in both languages. Its program is checked with each language's real tool, given up to three chances to repair itself from the error messages, then run against hidden tests over the web. If Charter's first-try gain is under 5 points <em>and</em> its programs pass fewer hidden tests, development stops for a design review.</p>
+
+<table>
+  <tr><th style="width:30%">Piece</th><th>State</th></tr>
+  <tr><td>Test harness</td><td>Built and tested, including a trial run with a small local model.</td></tr>
+  <tr><td>Tasks</td><td>22 tasks written and frozen, each with 4 hidden test scenarios. The project owner reviewed and approved all 22 on November 9, 2026. The design asks for a reviewer independent of the project, so the pilot report must say this was not one.</td></tr>
+  <tr><td>Hand-written reference answers</td><td>TypeScript passes all 22 tasks. Charter passes 19 of 22 completely; the three gaps are recorded as limits of the language, not hidden.</td></tr>
+  <tr><td>Still needed</td><td>Access to the AI models, and a budget estimated at $15 to $40. An independent review of the tasks is still worth adding.</td></tr>
+</table>
+
+<div class="keep">
+<h3>What Charter gives up</h3>
+
+<p>These are deliberate trade-offs, plus limits that writing the reference answers exposed.</p>
+
+<ul>
+  <li><strong>General-purpose algorithms.</strong> Loops are bounded and heavy computation must be handed to outside code.</li>
+  <li><strong>Text handling is weak.</strong> Reading inside a piece of text takes an awkward recursive function. This is one cause of the three reference gaps.</li>
+  <li><strong>Low-level control.</strong> No threads, no memory management.</li>
+  <li><strong>Common words are reserved.</strong> Names such as <code>to</code>, <code>by</code>, <code>set</code>, <code>order</code> and <code>result</code> cannot be used for your own data.</li>
+  <li><strong>It is new.</strong> AI models have seen enormous amounts of TypeScript and no Charter. The familiar-looking syntax is meant to offset this, and the pilot measures whether it does.</li>
+</ul>
+
+</div>
+
+<div class="keep">
+<h2>5. Try it</h2>
+
+<p>You need Node 22.18 or later. Run these from the project folder, <code>D:\Charter</code>.</p>
+
+<p class="label">Install once</p>
+<pre>npx pnpm@9.15.4 install</pre>
+
+<p class="label">Check a program, then run the tests written inside it</p>
+<pre>node packages/cli/src/main.ts check examples/todo/todo.charter
+node packages/cli/src/main.ts test  examples/todo/todo.charter</pre>
+
+<p class="label">See the checker refuse a program, with a counterexample</p>
+<pre>node packages/cli/src/main.ts check conformance/cases/n005-division-unproven/input.charter</pre>
+
+<p class="label">Run the to-do app as a web service</p>
+<pre>node packages/cli/src/main.ts serve examples/todo/todo.charter --db todo.db --port 8080</pre>
+
+<p class="note">The full design, all nine phases, is in <code>docs/charter-design.md</code>. Findings that contradicted the design are recorded in <code>docs/design/10-errata.md</code>.</p>
+
+</div>
+
+</body>
+</html>
