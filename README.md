@@ -561,4 +561,4 @@ These are deliberate trade-offs, plus limits that writing the reference answers 
 
 ## License
 
-No license has been chosen yet, and the repository has no license file. Until one is added, the code and documents are published for reading and evaluation, and all rights are reserved by the author.
+Charter is released under the [MIT License](LICENSE). You may use, copy, change and share the code and documents, including for commercial work, as long as you keep the copyright notice and the license text. It comes with no warranty.
